@@ -441,6 +441,14 @@ tickers, err := client.GetTickers(map[string]interface{}{
     "symbol":   "BTCUSDT",
 })
 
+// 📊 Get klines/candlesticks
+klines, err := client.GetKline(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
+    "interval": "1",  // 1 minute
+    "limit":    200,
+})
+
 // 📖 Get orderbook depth
 orderbook, err := client.GetOrderbook(map[string]interface{}{
     "category": "linear",
@@ -448,12 +456,47 @@ orderbook, err := client.GetOrderbook(map[string]interface{}{
     "limit":    50,
 })
 
-// 📊 Get klines/candlesticks
-klines, err := client.GetKlines(map[string]interface{}{
+// 📊 Get RPI orderbook
+rpiOrderbook, err := client.GetRPIOrderbook(map[string]interface{}{
     "category": "linear",
     "symbol":   "BTCUSDT",
-    "interval": "1",  // 1 minute
+})
+
+// 📈 Get open interest
+openInterest, err := client.GetOpenInterest(map[string]interface{}{
+    "category":     "linear",
+    "symbol":       "BTCUSDT",
+    "intervalTime": "5min",
+})
+
+// 💱 Get recent public trades
+recentTrades, err := client.GetRecentTrades(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
+    "limit":    50,
+})
+
+// 💰 Get funding rate history
+fundingRate, err := client.GetFundingRateHistory(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
     "limit":    200,
+})
+
+// 📊 Get historical volatility (options)
+volatility, err := client.GetHistoricalVolatility(map[string]interface{}{
+    "category": "option",
+})
+
+// 🏦 Get insurance pool data
+insurance, err := client.GetInsurance(map[string]interface{}{
+    "coin": "USDT",
+})
+
+// ⚠️ Get risk limit
+riskLimit, err := client.GetRiskLimit(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
 })
 ```
 
@@ -548,6 +591,62 @@ err := client.SetTradingStop(map[string]interface{}{
     "takeProfit":  "35000",  // Take profit at $35k
     "stopLoss":    "28000",  // Stop loss at $28k
 })
+
+// ⚙️ Set auto add margin
+err := client.SetAutoAddMargin(map[string]interface{}{
+    "category":      "linear",
+    "symbol":        "BTCUSDT",
+    "autoAddMargin": 1,  // 1: on, 0: off
+    "positionIdx":   0,
+})
+
+// 💰 Add or reduce margin
+err := client.AddOrReduceMargin(map[string]interface{}{
+    "category":    "linear",
+    "symbol":      "BTCUSDT",
+    "margin":      "100",  // Add 100 USDT
+    "positionIdx": 0,
+})
+
+// 📊 Get closed PnL (2 years history)
+closedPnL, err := client.GetClosedPnL(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
+    "limit":    50,
+})
+
+// 📜 Get closed options positions (6 months)
+closedOptions, err := client.GetClosedOptionsPositions(map[string]interface{}{
+    "category": "option",
+    "limit":    50,
+})
+
+// 🔄 Move position between accounts
+err := client.MovePosition(map[string]interface{}{
+    "fromUid": "123456",
+    "toUid":   "789012",
+    "list": []map[string]interface{}{
+        {
+            "category": "linear",
+            "symbol":   "BTCUSDT",
+            "price":    "30000",
+            "side":     "Buy",
+            "qty":      "0.01",
+        },
+    },
+})
+
+// 📜 Get move position history
+moveHistory, err := client.GetMovePositionHistory(map[string]interface{}{
+    "category": "linear",
+    "limit":    20,
+})
+
+// ✅ Confirm new risk limit
+err := client.ConfirmNewRiskLimit(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
+})
 ```
 
 </details>
@@ -572,7 +671,75 @@ spotFee := client.ComputeFee("spot", 1000.0, "Non-VIP", "taker")
 
 derivativesFee := client.ComputeFee("derivatives", 10000.0, "VIP1", "maker")
 // Returns: 6.75 USDT (0.0675% fee)
+
+// 💸 Get transferable amount
+transferable, err := client.GetTransferableAmount(map[string]interface{}{
+    "accountType": "UNIFIED",
+    "coin":        "USDT",
+})
+
+// 📜 Get transaction log
+transactions, err := client.GetTransactionLog(map[string]interface{}{
+    "accountType": "UNIFIED",
+    "category":    "linear",
+    "limit":       50,
+})
+
+// 👤 Get account info
+accountInfo, err := client.GetAccountInfo()
+
+// 🔧 Get account instruments info
+instruments, err := client.GetAccountInstrumentsInfo(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
+})
 ```
+
+</details>
+
+---
+
+### 🧪 Demo Trading
+
+<details>
+<summary><b>Click to expand Demo Trading methods</b></summary>
+
+```go
+// 🧪 Create demo trading client
+demoClient, err := bybit.NewDemoClient(bybit.ClientConfig{
+    APIKey:     "your_demo_api_key",
+    APISecret:  "your_demo_api_secret",
+    RecvWindow: 5000,
+    Signature:  "hmac",
+})
+
+// 💰 Get demo trading balance
+balance, err := demoClient.GetDemoTradingBalance()
+
+// 📝 Place demo order
+order, err := demoClient.CreateDemoOrder(map[string]interface{}{
+    "category":    "linear",
+    "symbol":      "BTCUSDT",
+    "side":        "Buy",
+    "orderType":   "Limit",
+    "qty":         "0.01",
+    "price":       "30000",
+    "timeInForce": "GTC",
+})
+
+// 📊 Get demo positions
+positions, err := demoClient.GetDemoPositions(map[string]interface{}{
+    "category": "linear",
+    "symbol":   "BTCUSDT",
+})
+
+// 💵 Apply for demo funds
+fundResult, err := demoClient.ApplyForDemoFunds(map[string]interface{}{
+    "coin": "USDT",
+})
+```
+
+> 🧪 **Demo Trading** allows you to test strategies with virtual funds before going live!
 
 </details>
 
@@ -835,7 +1002,11 @@ Explore the [`examples/`](examples/) directory for complete, runnable examples:
 |---------|-------------|------------|
 | 🎯 [`basic_client.go`](examples/basic_client.go) | Client initialization and basic API calls | ⭐ Beginner |
 | 📊 [`market_data.go`](examples/market_data.go) | Fetching real-time market data | ⭐ Beginner |
+| 📈 [`advanced_market_data.go`](examples/advanced_market_data.go) | Open interest, funding rates, volatility | ⭐⭐ Intermediate |
 | 💰 [`order_management.go`](examples/order_management.go) | Placing and managing orders | ⭐⭐ Intermediate |
+| 🎯 [`position_management.go`](examples/position_management.go) | Position management, margin, PnL | ⭐⭐ Intermediate |
+| 👤 [`account_info.go`](examples/account_info.go) | Account info, balances, transactions | ⭐⭐ Intermediate |
+| 🧪 [`demo_trading.go`](examples/demo_trading.go) | Demo trading with virtual funds | ⭐ Beginner |
 | 🌐 [`websocket_public.go`](examples/websocket_public.go) | Public WebSocket streams | ⭐⭐ Intermediate |
 | 🔐 [`websocket_private.go`](examples/websocket_private.go) | Private WebSocket streams | ⭐⭐⭐ Advanced |
 

@@ -288,6 +288,42 @@ func (c *Client) GetTickers(params map[string]interface{}) (map[string]interface
 	return c.Request("GET", "/v5/market/tickers", params)
 }
 
+func (c *Client) GetKline(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/kline", params)
+}
+
+func (c *Client) GetOrderbook(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/orderbook", params)
+}
+
+func (c *Client) GetRPIOrderbook(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/rpi-orderbook", params)
+}
+
+func (c *Client) GetOpenInterest(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/open-interest", params)
+}
+
+func (c *Client) GetRecentTrades(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/recent-trade", params)
+}
+
+func (c *Client) GetFundingRateHistory(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/funding/history", params)
+}
+
+func (c *Client) GetHistoricalVolatility(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/historical-volatility", params)
+}
+
+func (c *Client) GetInsurance(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/insurance", params)
+}
+
+func (c *Client) GetRiskLimit(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/market/risk-limit", params)
+}
+
 func (c *Client) CreateOrder(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/order/create", params)
 }
@@ -314,6 +350,22 @@ func (c *Client) GetHistoryOrders(params map[string]interface{}) (map[string]int
 
 func (c *Client) GetWalletBalance(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/account/wallet-balance", params)
+}
+
+func (c *Client) GetTransferableAmount(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/account/transferable-amount", params)
+}
+
+func (c *Client) GetTransactionLog(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/account/transaction-log", params)
+}
+
+func (c *Client) GetAccountInfo() (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/account/info", nil)
+}
+
+func (c *Client) GetAccountInstrumentsInfo(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/account/instruments", params)
 }
 
 func (c *Client) GetPositions(params map[string]interface{}) (map[string]interface{}, error) {
@@ -348,6 +400,34 @@ func (c *Client) SetLeverage(category, symbol string, leverage float64, side *st
 	}
 
 	return c.Request("POST", "/v5/position/set-leverage", payload)
+}
+
+func (c *Client) SetAutoAddMargin(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("POST", "/v5/position/set-auto-add-margin", params)
+}
+
+func (c *Client) AddOrReduceMargin(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("POST", "/v5/position/add-margin", params)
+}
+
+func (c *Client) GetClosedPnL(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/position/closed-pnl", params)
+}
+
+func (c *Client) GetClosedOptionsPositions(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/position/close-position", params)
+}
+
+func (c *Client) MovePosition(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("POST", "/v5/position/move-positions", params)
+}
+
+func (c *Client) GetMovePositionHistory(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("GET", "/v5/position/move-position-history", params)
+}
+
+func (c *Client) ConfirmNewRiskLimit(params map[string]interface{}) (map[string]interface{}, error) {
+	return c.Request("POST", "/v5/position/confirm-pending-mmr", params)
 }
 
 func (c *Client) lastPrice(symbol, category string) (float64, error) {
