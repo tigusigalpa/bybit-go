@@ -15,6 +15,8 @@
 
 Turn your boldest trading ideas into reality with the most powerful Go SDK for the Bybit V5 API. Forget wrestling with documentation and focus on what truly matters—building profitable strategies.
 
+> 📖 **[Full documentation available on Wiki](https://github.com/tigusigalpa/bybit-go/wiki)**
+
 ---
 
 ## 🎯 Why Do Traders and Developers Choose the Bybit Go SDK?
@@ -154,7 +156,8 @@ func main() {
 
 ## 📚 Examples & Documentation
 
-To dive deeper into all the features of the SDK, check out the `examples/` directory. There you'll find working examples for all major functions, from fetching market data to managing WebSocket streams.
+- **[Wiki — Documentation & Guides](https://github.com/tigusigalpa/bybit-go/wiki)**
+- Working examples in the [`examples/`](examples/) directory for all major functions, from fetching market data to managing WebSocket streams.
 
 ---
 
