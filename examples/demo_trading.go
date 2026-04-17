@@ -32,7 +32,7 @@ func main() {
 	fmt.Printf("   Endpoint: %s\n\n", demoClient.BaseURI())
 
 	fmt.Println("💰 Getting Demo Trading Balance...")
-	balance, err := demoClient.GetDemoTradingBalance()
+	balance, err := demoClient.GetWalletBalance(nil)
 	if err != nil {
 		log.Printf("Error getting demo balance: %v\n", err)
 	} else {
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	fmt.Println("📝 Placing Demo Order...")
-	order, err := demoClient.CreateDemoOrder(map[string]interface{}{
+	order, err := demoClient.CreateOrder(map[string]interface{}{
 		"category":    "linear",
 		"symbol":      "BTCUSDT",
 		"side":        "Buy",
@@ -94,7 +94,7 @@ func main() {
 	}
 
 	fmt.Println("📊 Getting Demo Positions...")
-	positions, err := demoClient.GetDemoPositions(map[string]interface{}{
+	positions, err := demoClient.GetPositions(map[string]interface{}{
 		"category": "linear",
 		"symbol":   "BTCUSDT",
 	})
@@ -119,9 +119,7 @@ func main() {
 	}
 
 	fmt.Println("💵 Applying for Demo Funds (if needed)...")
-	fundResult, err := demoClient.ApplyForDemoFunds(map[string]interface{}{
-		"coin": "USDT",
-	})
+	fundResult, err := demoClient.ApplyForDemoFundsSimple("USDT", "10000")
 	if err != nil {
 		log.Printf("Note: %v\n", err)
 	} else {

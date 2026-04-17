@@ -4,7 +4,7 @@
 
 ### ⚡️ A Golang Client for the V5 API, as Fast as a Rocket
 
-![Bybit Golang SDK](https://github.com/user-attachments/assets/3463194b-a042-4f84-adfb-708ec7ade75a)
+![Bybit Golang SDK](https://i.postimg.cc/Gtgycn28/537260316-3463194b-a042-4f84-adfb-708ec7ade75a.jpg)
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go)](https://golang.org)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
