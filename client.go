@@ -2,11 +2,13 @@ package bybit
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/hmac"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -125,6 +127,8 @@ func (c *Client) BaseURI() string {
 	}
 
 	switch strings.ToLower(c.region) {
+	case "demo":
+		return "https://api-demo.bybit.com"
 	case "nl":
 		return "https://api.bybit.nl"
 	case "tr":
@@ -147,7 +151,7 @@ func (c *Client) timestamp() string {
 func (c *Client) signString(data string) (string, error) {
 	if c.signature == "rsa" && c.rsaPrivateKey != nil {
 		hash := sha256.Sum256([]byte(data))
-		signature, err := rsa.SignPKCS1v15(nil, c.rsaPrivateKey, 0, hash[:])
+		signature, err := rsa.SignPKCS1v15(nil, c.rsaPrivateKey, crypto.SHA256, hash[:])
 		if err != nil {
 			return "", err
 		}
@@ -156,7 +160,7 @@ func (c *Client) signString(data string) (string, error) {
 
 	mac := hmac.New(sha256.New, []byte(c.apiSecret))
 	mac.Write([]byte(data))
-	return strings.ToLower(fmt.Sprintf("%x", mac.Sum(nil))), nil
+	return hex.EncodeToString(mac.Sum(nil)), nil
 }
 
 func (c *Client) buildQuery(params map[string]interface{}) string {
@@ -205,6 +209,8 @@ func (c *Client) headers(method, path string, params map[string]interface{}) (ma
 		"X-BAPI-TIMESTAMP":   ts,
 		"X-BAPI-RECV-WINDOW": recv,
 		"X-BAPI-SIGN":        sign,
+		"User-Agent":         "bybit-go/1.0.0",
+		"X-Referer":          "bybit-go",
 	}
 
 	if c.signature == "hmac" {
@@ -471,7 +477,9 @@ func (c *Client) qtyFromMargin(margin, price, leverage float64) float64 {
 	if price == 0 {
 		return 0
 	}
-	return margin * leverage / price
+	qty := margin * leverage / price
+	// Round to 3 decimal places for most symbols
+	return float64(int(qty*1000)) / 1000
 }
 
 type PlaceOrderParams struct {
@@ -547,7 +555,7 @@ func (c *Client) PlaceOrder(params PlaceOrderParams) (map[string]interface{}, er
 			entryPrice = 0.0000001
 		}
 		qty := c.qtyFromMargin(params.Size, entryPrice, leverage)
-		payload["qty"] = fmt.Sprintf("%.8f", qty)
+		payload["qty"] = fmt.Sprintf("%.3f", qty)
 
 		if orderType == "Limit" && params.Price != nil {
 			payload["price"] = fmt.Sprintf("%.8f", *params.Price)
