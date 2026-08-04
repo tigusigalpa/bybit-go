@@ -16,7 +16,7 @@ import (
 type WebSocket struct {
 	apiKey          string
 	apiSecret       string
-	testnet         bool
+	demo            bool
 	region          string
 	isPrivate       bool
 	conn            *websocket.Conn
@@ -29,7 +29,7 @@ type WebSocket struct {
 type WebSocketConfig struct {
 	APIKey    string
 	APISecret string
-	Testnet   bool
+	Demo      bool
 	Region    string
 	IsPrivate bool
 }
@@ -42,7 +42,7 @@ func NewWebSocket(config WebSocketConfig) *WebSocket {
 	return &WebSocket{
 		apiKey:        config.APIKey,
 		apiSecret:     config.APISecret,
-		testnet:       config.Testnet,
+		demo:          config.Demo,
 		region:        config.Region,
 		isPrivate:     config.IsPrivate,
 		subscriptions: make([]string, 0),
@@ -50,11 +50,11 @@ func NewWebSocket(config WebSocketConfig) *WebSocket {
 }
 
 func (ws *WebSocket) getWebSocketURL() string {
-	if ws.testnet {
+	if ws.demo {
 		if ws.isPrivate {
-			return "wss://stream-testnet.bybit.com/v5/private"
+			return "wss://stream-demo.bybit.com/v5/private"
 		}
-		return "wss://stream-testnet.bybit.com/v5/public/spot"
+		return "wss://stream-demo.bybit.com/v5/public/spot"
 	}
 
 	switch strings.ToLower(ws.region) {

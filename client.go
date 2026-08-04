@@ -24,7 +24,7 @@ import (
 type Client struct {
 	apiKey        string
 	apiSecret     string
-	testnet       bool
+	demo          bool
 	region        string
 	recvWindow    int
 	signature     string
@@ -36,7 +36,7 @@ type Client struct {
 type ClientConfig struct {
 	APIKey        string
 	APISecret     string
-	Testnet       bool
+	Demo          bool
 	Region        string
 	RecvWindow    int
 	Signature     string
@@ -63,7 +63,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 	client := &Client{
 		apiKey:     config.APIKey,
 		apiSecret:  config.APISecret,
-		testnet:    config.Testnet,
+		demo:       config.Demo,
 		region:     config.Region,
 		recvWindow: config.RecvWindow,
 		signature:  config.Signature,
@@ -122,8 +122,8 @@ func defaultFees() map[string]map[string]map[string]float64 {
 }
 
 func (c *Client) BaseURI() string {
-	if c.testnet {
-		return "https://api-testnet.bybit.com"
+	if c.demo {
+		return "https://api-demo.bybit.com"
 	}
 
 	switch strings.ToLower(c.region) {

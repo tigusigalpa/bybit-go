@@ -14,7 +14,7 @@ func main() {
 	fmt.Println("=== Bybit Go SDK - Public WebSocket Example ===\n")
 
 	ws := bybit.NewWebSocket(bybit.WebSocketConfig{
-		Testnet:   false,
+		Demo:      false,
 		Region:    "global",
 		IsPrivate: false,
 	})

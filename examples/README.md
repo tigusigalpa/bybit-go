@@ -27,7 +27,7 @@ Each example is a standalone Go program. Run them individually:
 Demonstrates basic client initialization and server time retrieval.
 
 ```bash
-go run basic_client.go
+go run basic_client/main.go
 ```
 
 ### Market Data Example
@@ -35,7 +35,7 @@ go run basic_client.go
 Shows how to fetch market data for multiple symbols.
 
 ```bash
-go run market_data.go
+go run market_data/main.go
 ```
 
 ### Order Management Example
@@ -43,7 +43,7 @@ go run market_data.go
 Demonstrates order placement, retrieval, and management.
 
 ```bash
-go run order_management.go
+go run order_management/main.go
 ```
 
 **Note:** This example requires valid API credentials with trading permissions.
@@ -53,7 +53,7 @@ go run order_management.go
 Shows how to subscribe to public WebSocket streams (orderbook, trades, ticker, klines).
 
 ```bash
-go run websocket_public.go
+go run websocket_public/main.go
 ```
 
 Press `Ctrl+C` to stop the WebSocket listener.
@@ -63,7 +63,7 @@ Press `Ctrl+C` to stop the WebSocket listener.
 Demonstrates authenticated WebSocket connections for account updates.
 
 ```bash
-go run websocket_private.go
+go run websocket_private/main.go
 ```
 
 **Note:** Requires valid API credentials.
@@ -72,7 +72,7 @@ Press `Ctrl+C` to stop the WebSocket listener.
 
 ## Important Notes
 
-- **Testnet vs Mainnet**: Most examples use testnet by default. Change `Testnet: false` to use mainnet.
+- **Demo Trading vs Mainnet**: Most examples use demo trading by default. Change `Demo: false` to use mainnet.
 - **API Permissions**: Some examples require specific API key permissions (trading, wallet access).
 - **Rate Limits**: Be mindful of Bybit's API rate limits when running examples repeatedly.
 - **WebSocket Examples**: These run indefinitely until you press `Ctrl+C`.

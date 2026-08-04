@@ -35,7 +35,7 @@ No more battling with latency and inefficient code. Our SDK allows you to execut
 <details>
 <summary><b>👨‍💻 For Developers</b></summary>
 
-We've taken care of your comfort. Type-safe operations eliminate runtime errors, and Testnet support lets you experiment without risk. The SDK has zero unnecessary dependencies, is easily configurable, and comes with comprehensive documentation and examples. It's the tool you'll love to use.
+We've taken care of your comfort. Type-safe operations eliminate runtime errors, and demo trading support lets you experiment without risk. The SDK has zero unnecessary dependencies, is easily configurable, and comes with comprehensive documentation and examples. It's the tool you'll love to use.
 
 </details>
 
@@ -59,7 +59,7 @@ We've packed everything you need for successful trading into one powerful packag
 | 🔐 **Security** | HMAC-SHA256 and RSA-SHA256 support to protect your data. |
 | 🌐 **WebSocket** | Real-time data streaming with automatic reconnection. |
 | ⚙️ **Management** | Control positions, leverage, risk, and your wallet. |
-| 🌍 **Global Access** | Multi-region and testnet support for low-latency trading. |
+| 🌍 **Global Access** | Multi-region and demo-trading support for low-latency trading. |
 
 ---
 
@@ -85,7 +85,7 @@ client, err := bybit.NewClient(
     bybit.ClientConfig{
         APIKey:     os.Getenv("BYBIT_API_KEY"),
         APISecret:  os.Getenv("BYBIT_API_SECRET"),
-        Testnet:    true, // Set to true for safe testing
+        Demo:       true, // Set to true for safe testing
         Region:     "global",
     },
 )
@@ -111,7 +111,7 @@ func main() {
     client, err := bybit.NewClient(bybit.ClientConfig{
         APIKey:     "your_api_key",
         APISecret:  "your_api_secret",
-        Testnet:    true, // A safe environment for testing
+        Demo:       true, // A safe environment for testing
     })
     if err != nil {
         log.Fatal(err)
@@ -173,4 +173,4 @@ The project is distributed under the MIT License, giving you complete freedom to
 
 <br>
 
-*<sub>⚠️ **Disclaimer:** Trading cryptocurrencies involves high risk. This SDK is provided "as is" without any warranty. Always test your strategies on the Testnet and never invest more than you can afford to lose.</sub>*
+*<sub>⚠️ **Disclaimer:** Trading cryptocurrencies involves high risk. This SDK is provided "as is" without any warranty. Always test your strategies using Demo Trading and never invest more than you can afford to lose.</sub>*

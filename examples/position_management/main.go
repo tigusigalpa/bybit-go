@@ -19,7 +19,7 @@ func main() {
 	client, err := bybit.NewClient(bybit.ClientConfig{
 		APIKey:     apiKey,
 		APISecret:  apiSecret,
-		Testnet:    true,
+		Demo:       true,
 		Region:     "global",
 		RecvWindow: 5000,
 		Signature:  "hmac",

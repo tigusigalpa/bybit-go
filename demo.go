@@ -1,94 +1,17 @@
 package bybit
 
-import (
-	"bytes"
-	"encoding/json"
-	"io"
-	"net/http"
-	"strings"
-)
-
-const (
-	DemoBaseURL      = "https://api-demo.bybit.com"
-	DemoWebSocketURL = "wss://stream-demo.bybit.com"
-)
-
 type DemoClient struct {
 	*Client
 }
 
 func NewDemoClient(config ClientConfig) (*DemoClient, error) {
+	config.Demo = true
 	client, err := NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
 	return &DemoClient{Client: client}, nil
-}
-
-func (dc *DemoClient) BaseURI() string {
-	return DemoBaseURL
-}
-
-func (dc *DemoClient) WebSocketURL() string {
-	return DemoWebSocketURL
-}
-
-func (dc *DemoClient) Request(method, path string, params map[string]interface{}) (map[string]interface{}, error) {
-	method = strings.ToUpper(method)
-	fullURL := dc.BaseURI() + path
-
-	var req *http.Request
-	var err error
-
-	if method == "GET" {
-		if len(params) > 0 {
-			fullURL += "?" + dc.buildQuery(params)
-		}
-		req, err = http.NewRequest(method, fullURL, nil)
-	} else {
-		var body []byte
-		if len(params) > 0 {
-			body, err = json.Marshal(params)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			body = []byte("{}")
-		}
-		req, err = http.NewRequest(method, fullURL, bytes.NewBuffer(body))
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	headers, err := dc.headers(method, path, params)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := dc.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]interface{}
-	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return map[string]interface{}{"raw": string(bodyBytes)}, nil
-	}
-
-	return result, nil
 }
 
 func (dc *DemoClient) GetWalletBalance(params map[string]interface{}) (map[string]interface{}, error) {

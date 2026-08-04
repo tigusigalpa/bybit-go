@@ -47,10 +47,10 @@ go mod tidy
    - Save your API Key and Secret securely
 
 3. **For testing (recommended):**
-   - Use Bybit Testnet: [https://testnet.bybit.com](https://testnet.bybit.com)
-   - Create a testnet account (separate from mainnet)
-   - Generate testnet API credentials
-   - Fund your testnet account with virtual funds
+   - Use Bybit Demo Trading: [https://www.bybit.com](https://www.bybit.com)
+   - Create a demo trading account (separate from mainnet)
+   - Generate demo trading API credentials
+   - Fund your demo trading account with virtual funds
 
 ## Configuration
 
@@ -61,7 +61,7 @@ Create a `.env` file or export environment variables:
 ```bash
 export BYBIT_API_KEY="your_api_key_here"
 export BYBIT_API_SECRET="your_api_secret_here"
-export BYBIT_TESTNET="true"
+export BYBIT_DEMO="true"
 export BYBIT_REGION="global"
 ```
 
@@ -81,7 +81,7 @@ func main() {
     client, err := bybit.NewClient(bybit.ClientConfig{
         APIKey:     os.Getenv("BYBIT_API_KEY"),
         APISecret:  os.Getenv("BYBIT_API_SECRET"),
-        Testnet:    true,
+        Demo:       true,
         Region:     "global",
         RecvWindow: 5000,
         Signature:  "hmac",
@@ -118,7 +118,7 @@ func main() {
     client, err := bybit.NewClient(bybit.ClientConfig{
         APIKey:     "test",
         APISecret:  "test",
-        Testnet:    true,
+        Demo:       true,
     })
     if err != nil {
         log.Fatal(err)
@@ -153,7 +153,7 @@ go run test.go
 
 **Solution:** 
 - Verify your API key and secret are correct
-- Check that you're using the right environment (testnet vs mainnet)
+- Check that you're using the right environment (demo trading vs mainnet)
 - Ensure your system time is synchronized
 
 ### "Rate limit exceeded"
@@ -174,7 +174,7 @@ go run test.go
 
 - ⚠️ **Never commit API keys to version control**
 - ⚠️ Use environment variables or secure vaults for credentials
-- ⚠️ Test on testnet before using mainnet
+- ⚠️ Test using demo trading before using mainnet
 - ⚠️ Set appropriate API key permissions (principle of least privilege)
 - ⚠️ Regularly rotate API keys
 - ⚠️ Monitor API usage and set up alerts

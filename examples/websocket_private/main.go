@@ -23,7 +23,7 @@ func main() {
 	ws := bybit.NewWebSocket(bybit.WebSocketConfig{
 		APIKey:    apiKey,
 		APISecret: apiSecret,
-		Testnet:   true,
+		Demo:      true,
 		Region:    "global",
 		IsPrivate: true,
 	})

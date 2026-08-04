@@ -19,7 +19,7 @@ func main() {
 	client, err := bybit.NewClient(bybit.ClientConfig{
 		APIKey:     apiKey,
 		APISecret:  apiSecret,
-		Testnet:    true,
+		Demo:       true,
 		Region:     "global",
 		RecvWindow: 5000,
 		Signature:  "hmac",
@@ -38,7 +38,7 @@ func main() {
 
 	fmt.Printf("📍 Endpoint: %s\n", client.Endpoint())
 	fmt.Printf("🌍 Region: global\n")
-	fmt.Printf("🧪 Testnet: true\n\n")
+	fmt.Printf("🧪 Demo: true\n\n")
 
 	tickers, err := client.GetTickers(map[string]interface{}{
 		"category": "linear",
