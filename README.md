@@ -5,22 +5,22 @@
 [![Go version](https://img.shields.io/github/go-mod/go-version/tigusigalpa/bybit-go)](go.mod)
 [![License](https://img.shields.io/github/license/tigusigalpa/bybit-go)](LICENSE)
 
-Небольшой Go-клиент для [Bybit V5 API](https://bybit-exchange.github.io/docs/v5/intro). Он помогает быстрее начать работу с REST API, demo trading, WebSocket и TradFi-инструментами, не навязывая собственную архитектуру вашему приложению.
+A small Go client for the [Bybit V5 API](https://bybit-exchange.github.io/docs/v5/intro). It makes it easier to get started with the REST API, demo trading, WebSocket streams, and TradFi instruments without imposing an application architecture on your project.
 
-> Торговля связана с риском. Сначала проверяйте интеграцию и стратегию в demo-окружении, ограничивайте права API-ключа и никогда не добавляйте ключи в репозиторий.
+> Trading involves risk. Test both the integration and your strategy in the demo environment first, use narrowly scoped API-key permissions, and never commit keys to a repository.
 
-## Возможности
+## Features
 
-- REST-методы для рыночных данных, ордеров, аккаунта и позиций;
-- HMAC-SHA256 и RSA-SHA256 подписи для REST-запросов;
-- demo-режим и региональные REST/WebSocket endpoints;
-- публичные и приватные WebSocket-подписки;
-- удобные обёртки для TradFi (forex, metals, stocks и indices);
-- готовые, отдельные примеры в [`examples/`](examples/README.md).
+- REST methods for market data, orders, accounts, and positions;
+- HMAC-SHA256 and RSA-SHA256 signing for REST requests;
+- demo mode plus regional REST and WebSocket endpoints;
+- public and private WebSocket subscriptions;
+- convenience helpers for TradFi instruments (forex, metals, stocks, and indices);
+- standalone working examples in [`examples/`](examples/README.md).
 
-## Установка
+## Installation
 
-Требуется Go 1.21 или новее.
+Go 1.21 or later is required.
 
 ```bash
 go get github.com/tigusigalpa/bybit-go
@@ -30,9 +30,9 @@ go get github.com/tigusigalpa/bybit-go
 import bybit "github.com/tigusigalpa/bybit-go"
 ```
 
-## Быстрый старт
+## Quick start
 
-Публичные запросы тоже проходят через общий клиент; API-ключ для них не обязателен.
+Public requests use the same client and do not require an API key.
 
 ```go
 package main
@@ -61,20 +61,20 @@ func main() {
 }
 ```
 
-Для операций с аккаунтом передавайте ключи через переменные окружения:
+For account operations, pass credentials through environment variables:
 
 ```go
 client, err := bybit.NewClient(bybit.ClientConfig{
 	APIKey:    os.Getenv("BYBIT_API_KEY"),
 	APISecret: os.Getenv("BYBIT_API_SECRET"),
 	Demo:      true,
-	Region:    "global", // также: nl, tr, kz, ge, ae
+	Region:    "global", // also: nl, tr, kz, ge, ae
 })
 ```
 
-## Ордер
+## Placing an order
 
-Параметры API передаются напрямую, поэтому новые поля Bybit можно использовать без ожидания новой версии SDK.
+API parameters are passed through directly, so you can use newly added Bybit fields without waiting for an SDK release.
 
 ```go
 order, err := client.CreateOrder(map[string]interface{}{
@@ -92,11 +92,11 @@ if err != nil {
 fmt.Println(order)
 ```
 
-HTTP-ошибки (например, 429 или 401) возвращаются как `*bybit.HTTPError`; ответ Bybit с `retCode != 0` обычно приходит с HTTP 200 и остаётся в возвращаемой map. Всегда проверяйте `retCode` перед тем, как считать операцию успешной.
+HTTP failures such as `429` and `401` are returned as `*bybit.HTTPError`. A Bybit response with `retCode != 0` will normally still use HTTP 200 and is returned as a map, so always inspect `retCode` before treating an operation as successful.
 
-## RSA-подпись
+## RSA signatures
 
-Для RSA API-ключа укажите PEM приватного ключа. Если выбран `Signature: "rsa"`, ключ обязателен; неподдерживаемые типы подписи отклоняются при создании клиента.
+For an RSA API key, provide its PEM-encoded private key. `Signature: "rsa"` requires a private key, and unsupported signature types are rejected when creating the client.
 
 ```go
 client, err := bybit.NewClient(bybit.ClientConfig{
@@ -123,11 +123,11 @@ if err := ws.Listen(); err != nil {
 defer ws.Close()
 ```
 
-Публичный WebSocket этого пакета подключается к spot endpoint. Для приватного потока укажите `IsPrivate`, `APIKey` и `APISecret`. Приложение отвечает за жизненный цикл соединения и повторное подключение после ошибки.
+The package's public WebSocket connects to the spot endpoint. For private streams, set `IsPrivate` together with `APIKey` and `APISecret`. Your application owns the connection lifecycle and should reconnect after an error.
 
 ## TradFi
 
-Для популярных инструментов есть списки и вспомогательные методы:
+The package includes lists of popular instruments and focused helper methods:
 
 ```go
 tickers, err := client.GetTradFiTicker("XAUUSD")
@@ -137,22 +137,22 @@ order, err := client.PlaceTradFiOrder(bybit.TradFiOrderParams{
 })
 ```
 
-Доступность символов и торговых условий зависит от региона и аккаунта. Получайте актуальный список через `GetTradFiInstruments` перед размещением ордера.
+Instrument availability and trading conditions vary by account and region. Call `GetTradFiInstruments` to retrieve the current list before placing an order.
 
-## Примеры и проверка проекта
+## Examples and project checks
 
-Смотрите [каталог примеров](examples/README.md): basic client, market data, orders, positions, demo trading, TradFi и WebSocket. Примеры могут обращаться к сети или требовать ключи; перед запуском прочитайте их исходный код.
+See the [examples directory](examples/README.md) for basic client, market data, orders, positions, demo trading, TradFi, and WebSocket programs. Examples may make network calls or require credentials, so read their source before running them.
 
 ```bash
 go test ./...
 go vet ./...
 ```
 
-CI запускает эти проверки на Go 1.21 и текущей стабильной версии Go. Pull request приветствуются: пожалуйста, добавляйте тест для изменения поведения и не включайте реальные ключи или персональные данные.
+CI runs these checks on Go 1.21 and the current stable Go release. Pull requests are welcome: please add a test when changing behavior, and never include real API keys or personal data.
 
-## Документация и лицензия
+## Documentation and license
 
-- [Официальная документация Bybit V5](https://bybit-exchange.github.io/docs/v5/intro)
-- [Расширенная заметка по TradFi](wiki-tradfi.md)
-- [Инструкции по установке](INSTALLATION.md)
+- [Official Bybit V5 documentation](https://bybit-exchange.github.io/docs/v5/intro)
+- [Extended TradFi notes](wiki-tradfi.md)
+- [Installation instructions](INSTALLATION.md)
 - [MIT License](LICENSE)
