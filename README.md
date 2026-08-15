@@ -1,176 +1,158 @@
-# 🚀 Bybit Go SDK: Your Ticket to the World of Lightning-Fast Trading
+# bybit-go
 
-<div align="center">
+[![CI](https://github.com/tigusigalpa/bybit-go/actions/workflows/ci.yml/badge.svg)](https://github.com/tigusigalpa/bybit-go/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tigusigalpa/bybit-go.svg)](https://pkg.go.dev/github.com/tigusigalpa/bybit-go)
+[![Go version](https://img.shields.io/github/go-mod/go-version/tigusigalpa/bybit-go)](go.mod)
+[![License](https://img.shields.io/github/license/tigusigalpa/bybit-go)](LICENSE)
 
-### ⚡️ A Golang Client for the V5 API, as Fast as a Rocket
+Небольшой Go-клиент для [Bybit V5 API](https://bybit-exchange.github.io/docs/v5/intro). Он помогает быстрее начать работу с REST API, demo trading, WebSocket и TradFi-инструментами, не навязывая собственную архитектуру вашему приложению.
 
-![Bybit Golang SDK](https://i.postimg.cc/2yjbGXVh/bybit-go-github-hero.jpg)
+> Торговля связана с риском. Сначала проверяйте интеграцию и стратегию в demo-окружении, ограничивайте права API-ключа и никогда не добавляйте ключи в репозиторий.
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go)](https://golang.org)
-[![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-brightgreen?style=for-the-badge&logo=socketdotio)](https://bybit-exchange.github.io/docs/v5/ws/connect)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-ff69b4?style=for-the-badge)](https://github.com/tigusigalpa/bybit-go/pulls)
+## Возможности
 
-</div>
+- REST-методы для рыночных данных, ордеров, аккаунта и позиций;
+- HMAC-SHA256 и RSA-SHA256 подписи для REST-запросов;
+- demo-режим и региональные REST/WebSocket endpoints;
+- публичные и приватные WebSocket-подписки;
+- удобные обёртки для TradFi (forex, metals, stocks и indices);
+- готовые, отдельные примеры в [`examples/`](examples/README.md).
 
-Turn your boldest trading ideas into reality with the most powerful Go SDK for the Bybit V5 API. Forget wrestling with documentation and focus on what truly matters—building profitable strategies.
+## Установка
 
-> 📖 **[Full documentation available on Wiki](https://github.com/tigusigalpa/bybit-go/wiki)**
+Требуется Go 1.21 или новее.
 
----
-
-## 🎯 Why Do Traders and Developers Choose the Bybit Go SDK?
-
-This SDK is more than just an API wrapper. It's your trusted partner in the world of algorithmic trading, built with a love for Golang and a deep understanding of traders' needs.
-
-<br>
-
-<details>
-<summary><b>🤖 For Algorithmic Traders</b></summary>
-
-No more battling with latency and inefficient code. Our SDK allows you to execute complex strategies with millisecond precision. Get real-time market data via WebSocket, use advanced order types, and manage risk with automatic controls. The built-in fee calculator ensures crystal-clear tracking of your profits.
-
-</details>
-
-<details>
-<summary><b>👨‍💻 For Developers</b></summary>
-
-We've taken care of your comfort. Type-safe operations eliminate runtime errors, and demo trading support lets you experiment without risk. The SDK has zero unnecessary dependencies, is easily configurable, and comes with comprehensive documentation and examples. It's the tool you'll love to use.
-
-</details>
-
-<details>
-<summary><b>🏢 For Production Systems</b></summary>
-
-Reliability is our middle name. Thread-safe operations, smart reconnection with exponential backoff, and detailed error messages make this SDK the perfect choice for 24/7 systems. Built-in rate limit handling and multi-region support guarantee your application's stability under any conditions.
-
-</details>
-
----
-
-## ✨ Key Features
-
-We've packed everything you need for successful trading into one powerful package.
-
-| Category | Features |
-|---|---|
-| 📊 **Market Data** | Get real-time tickers, order books, K-lines, and trade history. |
-| 💰 **Trading** | Spot, derivatives, limit, and market orders, TP/SL—all at your fingertips. |
-| 🔐 **Security** | HMAC-SHA256 and RSA-SHA256 support to protect your data. |
-| 🌐 **WebSocket** | Real-time data streaming with automatic reconnection. |
-| ⚙️ **Management** | Control positions, leverage, risk, and your wallet. |
-| 🌍 **Global Access** | Multi-region and demo-trading support for low-latency trading. |
-
----
-
-## 📦 Installation & Configuration
-
-Getting started is a breeze. You'll be up and running in seconds.
-
-**Step 1:** Install the package using Go.
 ```bash
 go get github.com/tigusigalpa/bybit-go
 ```
 
-**Step 2:** Import it into your project.
 ```go
 import bybit "github.com/tigusigalpa/bybit-go"
 ```
 
-**Step 3:** Configure the client using environment variables or programmatic setup.
+## Быстрый старт
 
-*Configuration Example:*
-```go
-client, err := bybit.NewClient(
-    bybit.ClientConfig{
-        APIKey:     os.Getenv("BYBIT_API_KEY"),
-        APISecret:  os.Getenv("BYBIT_API_SECRET"),
-        Demo:       true, // Set to true for safe testing
-        Region:     "global",
-    },
-)
-```
-
----
-
-## 🚀 Quick Start: From Zero to Your First Order
-
-Let's take your first step into the world of automated trading together.
+Публичные запросы тоже проходят через общий клиент; API-ключ для них не обязателен.
 
 ```go
 package main
 
 import (
-    "fmt"
-    "log"
-    bybit "github.com/tigusigalpa/bybit-go"
+	"fmt"
+	"log"
+
+	bybit "github.com/tigusigalpa/bybit-go"
 )
 
 func main() {
-    // Step 1: Initialize the client
-    client, err := bybit.NewClient(bybit.ClientConfig{
-        APIKey:     "your_api_key",
-        APISecret:  "your_api_secret",
-        Demo:       true, // A safe environment for testing
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
+	client, err := bybit.NewClient(bybit.ClientConfig{Demo: true})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Step 2: Verify the connection to the server
-    serverTime, err := client.GetServerTime()
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("✅ Connected! Server Time: %v\n", serverTime)
-
-    // Step 3: Get real-time market data
-    tickers, err := client.GetTickers(map[string]interface{}{
-        "category": "linear",
-        "symbol":   "BTCUSDT",
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("📊 BTC Price: %v\n", tickers)
-
-    // Step 4: Place your first order
-    order, err := client.CreateOrder(map[string]interface{}{
-        "category":    "linear",
-        "symbol":      "BTCUSDT",
-        "side":        "Buy",
-        "orderType":   "Limit",
-        "qty":         "0.01",
-        "price":       "30000",
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("🎉 Order placed successfully! ID: %v\n", order["result"].(map[string]interface{})["orderId"])
+	tickers, err := client.GetTickers(map[string]interface{}{
+		"category": "linear",
+		"symbol":   "BTCUSDT",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", tickers["result"])
 }
 ```
 
-**Congratulations! You've just made your first trade via the API!**
+Для операций с аккаунтом передавайте ключи через переменные окружения:
 
----
+```go
+client, err := bybit.NewClient(bybit.ClientConfig{
+	APIKey:    os.Getenv("BYBIT_API_KEY"),
+	APISecret: os.Getenv("BYBIT_API_SECRET"),
+	Demo:      true,
+	Region:    "global", // также: nl, tr, kz, ge, ae
+})
+```
 
-## 📚 Examples & Documentation
+## Ордер
 
-- **[Wiki — Documentation & Guides](https://github.com/tigusigalpa/bybit-go/wiki)**
-- Working examples in the [`examples/`](examples/) directory for all major functions, from fetching market data to managing WebSocket streams.
+Параметры API передаются напрямую, поэтому новые поля Bybit можно использовать без ожидания новой версии SDK.
 
----
+```go
+order, err := client.CreateOrder(map[string]interface{}{
+	"category":    "linear",
+	"symbol":      "BTCUSDT",
+	"side":        "Buy",
+	"orderType":   "Limit",
+	"qty":         "0.001",
+	"price":       "30000",
+	"timeInForce": "GTC",
+})
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(order)
+```
 
-## 🤝 Make the Project Better
+HTTP-ошибки (например, 429 или 401) возвращаются как `*bybit.HTTPError`; ответ Bybit с `retCode != 0` обычно приходит с HTTP 200 и остаётся в возвращаемой map. Всегда проверяйте `retCode` перед тем, как считать операцию успешной.
 
-We always welcome community contributions! If you have ideas on how to improve the SDK or have found a bug, please create an issue or submit a pull request. Let's build the best tool for traders together!
+## RSA-подпись
 
----
+Для RSA API-ключа укажите PEM приватного ключа. Если выбран `Signature: "rsa"`, ключ обязателен; неподдерживаемые типы подписи отклоняются при создании клиента.
 
-## 📄 License
+```go
+client, err := bybit.NewClient(bybit.ClientConfig{
+	APIKey:        os.Getenv("BYBIT_API_KEY"),
+	Signature:     "rsa",
+	RSAPrivateKey: os.Getenv("BYBIT_RSA_PRIVATE_KEY"),
+})
+```
 
-The project is distributed under the MIT License, giving you complete freedom to use and modify it.
+## WebSocket
 
-<br>
+```go
+ws := bybit.NewWebSocket(bybit.WebSocketConfig{Demo: true})
+ws.OnMessage(func(message map[string]interface{}) {
+	fmt.Printf("%+v\n", message)
+})
 
-*<sub>⚠️ **Disclaimer:** Trading cryptocurrencies involves high risk. This SDK is provided "as is" without any warranty. Always test your strategies using Demo Trading and never invest more than you can afford to lose.</sub>*
+if err := ws.SubscribeTicker("BTCUSDT"); err != nil {
+	log.Fatal(err)
+}
+if err := ws.Listen(); err != nil {
+	log.Fatal(err)
+}
+defer ws.Close()
+```
+
+Публичный WebSocket этого пакета подключается к spot endpoint. Для приватного потока укажите `IsPrivate`, `APIKey` и `APISecret`. Приложение отвечает за жизненный цикл соединения и повторное подключение после ошибки.
+
+## TradFi
+
+Для популярных инструментов есть списки и вспомогательные методы:
+
+```go
+tickers, err := client.GetTradFiTicker("XAUUSD")
+positions, err := client.GetTradFiPositions("XAUUSD")
+order, err := client.PlaceTradFiOrder(bybit.TradFiOrderParams{
+	Symbol: "XAUUSD", Side: "Buy", OrderType: "Market", Qty: "1",
+})
+```
+
+Доступность символов и торговых условий зависит от региона и аккаунта. Получайте актуальный список через `GetTradFiInstruments` перед размещением ордера.
+
+## Примеры и проверка проекта
+
+Смотрите [каталог примеров](examples/README.md): basic client, market data, orders, positions, demo trading, TradFi и WebSocket. Примеры могут обращаться к сети или требовать ключи; перед запуском прочитайте их исходный код.
+
+```bash
+go test ./...
+go vet ./...
+```
+
+CI запускает эти проверки на Go 1.21 и текущей стабильной версии Go. Pull request приветствуются: пожалуйста, добавляйте тест для изменения поведения и не включайте реальные ключи или персональные данные.
+
+## Документация и лицензия
+
+- [Официальная документация Bybit V5](https://bybit-exchange.github.io/docs/v5/intro)
+- [Расширенная заметка по TradFi](wiki-tradfi.md)
+- [Инструкции по установке](INSTALLATION.md)
+- [MIT License](LICENSE)

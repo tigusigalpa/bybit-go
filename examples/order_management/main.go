@@ -28,7 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Bybit Go SDK - Order Management Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Order Management Example ===")
+	fmt.Println()
 
 	fmt.Println("📊 Getting current BTC price...")
 	tickers, err := client.GetTickers(map[string]interface{}{

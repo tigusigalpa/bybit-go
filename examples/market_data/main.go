@@ -24,7 +24,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Bybit Go SDK - Market Data Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Market Data Example ===")
+	fmt.Println()
 
 	symbols := []string{"BTCUSDT", "ETHUSDT", "SOLUSDT"}
 

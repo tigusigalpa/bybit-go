@@ -28,7 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Bybit Go SDK - Basic Client Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Basic Client Example ===")
+	fmt.Println()
 
 	serverTime, err := client.GetServerTime()
 	if err != nil {

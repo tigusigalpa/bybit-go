@@ -24,7 +24,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Bybit Go SDK - TradFi Example ===\n")
+	fmt.Println("=== Bybit Go SDK - TradFi Example ===")
+	fmt.Println()
 
 	// --- Metals ---
 	fmt.Println("🥇 Metals Tickers (XAUUSD, XAGUSD):")

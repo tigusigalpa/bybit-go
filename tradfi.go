@@ -11,10 +11,10 @@ const (
 	TradFiCategoryInverse = "inverse"
 
 	// TradFi asset class prefixes used in Bybit symbol naming
-	TradFiAssetForex    = "forex"
-	TradFiAssetMetal    = "metal"
-	TradFiAssetStock    = "stock"
-	TradFiAssetIndex    = "index"
+	TradFiAssetForex     = "forex"
+	TradFiAssetMetal     = "metal"
+	TradFiAssetStock     = "stock"
+	TradFiAssetIndex     = "index"
 	TradFiAssetCommodity = "commodity"
 )
 
@@ -54,7 +54,7 @@ var (
 		"AAPLUSDT",  // Apple
 		"AMZNUSDT",  // Amazon
 		"TSLAUSDT",  // Tesla
-		"GOOGLSDT",  // Google
+		"GOOGLUSDT", // Google
 		"MSFTUSDT",  // Microsoft
 		"METAUSDT",  // Meta
 		"NVDAUSDT",  // NVIDIA
@@ -185,14 +185,14 @@ func (c *Client) GetTradFiPositions(symbol string) (map[string]interface{}, erro
 // TradFiOrderParams holds parameters for placing a TradFi order.
 type TradFiOrderParams struct {
 	Symbol      string
-	Side        string  // "Buy" or "Sell"
-	OrderType   string  // "Market" or "Limit"
-	Qty         string  // quantity as string
-	Price       string  // required for Limit orders
-	TimeInForce string  // "GTC", "IOC", "FOK", "PostOnly"
-	TakeProfit  string  // optional TP price
-	StopLoss    string  // optional SL price
-	PositionIdx int     // 0=one-way, 1=hedge-long, 2=hedge-short
+	Side        string // "Buy" or "Sell"
+	OrderType   string // "Market" or "Limit"
+	Qty         string // quantity as string
+	Price       string // required for Limit orders
+	TimeInForce string // "GTC", "IOC", "FOK", "PostOnly"
+	TakeProfit  string // optional TP price
+	StopLoss    string // optional SL price
+	PositionIdx int    // 0=one-way, 1=hedge-long, 2=hedge-short
 	ReduceOnly  bool
 	OrderLinkID string
 }

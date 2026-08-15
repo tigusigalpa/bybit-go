@@ -11,7 +11,8 @@ import (
 )
 
 func main() {
-	fmt.Println("=== Bybit Go SDK - Public WebSocket Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Public WebSocket Example ===")
+	fmt.Println()
 
 	ws := bybit.NewWebSocket(bybit.WebSocketConfig{
 		Demo:      false,
@@ -31,7 +32,9 @@ func main() {
 	fmt.Println("   - Public Trades")
 	fmt.Println("   - Ticker")
 	fmt.Println("   - Kline (1m)")
-	fmt.Println("\n📡 Listening for messages...\n")
+	fmt.Println()
+	fmt.Println("📡 Listening for messages...")
+	fmt.Println()
 
 	ws.OnMessage(func(data map[string]interface{}) {
 		if errorMsg, ok := data["error"].(bool); ok && errorMsg {

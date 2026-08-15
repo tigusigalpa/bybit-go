@@ -16,7 +16,8 @@ func main() {
 		log.Fatal("Please set BYBIT_DEMO_API_KEY and BYBIT_DEMO_API_SECRET environment variables")
 	}
 
-	fmt.Println("=== Bybit Go SDK - Demo Trading Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Demo Trading Example ===")
+	fmt.Println()
 
 	demoClient, err := bybit.NewDemoClient(bybit.ClientConfig{
 		APIKey:     apiKey,

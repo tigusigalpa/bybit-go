@@ -28,7 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Bybit Go SDK - Position Management Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Position Management Example ===")
+	fmt.Println()
 
 	fmt.Println("📊 Getting Current Positions...")
 	positions, err := client.GetPositions(map[string]interface{}{

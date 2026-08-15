@@ -28,7 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Bybit Go SDK - Account Information Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Account Information Example ===")
+	fmt.Println()
 
 	fmt.Println("👤 Getting Account Info...")
 	accountInfo, err := client.GetAccountInfo()

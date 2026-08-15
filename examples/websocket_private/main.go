@@ -18,7 +18,8 @@ func main() {
 		log.Fatal("Please set BYBIT_API_KEY and BYBIT_API_SECRET environment variables")
 	}
 
-	fmt.Println("=== Bybit Go SDK - Private WebSocket Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Private WebSocket Example ===")
+	fmt.Println()
 
 	ws := bybit.NewWebSocket(bybit.WebSocketConfig{
 		APIKey:    apiKey,
@@ -40,7 +41,9 @@ func main() {
 	fmt.Println("   - Order updates")
 	fmt.Println("   - Execution updates")
 	fmt.Println("   - Wallet updates")
-	fmt.Println("\n📡 Listening for messages...\n")
+	fmt.Println()
+	fmt.Println("📡 Listening for messages...")
+	fmt.Println()
 
 	ws.OnMessage(func(data map[string]interface{}) {
 		if errorMsg, ok := data["error"].(bool); ok && errorMsg {
@@ -66,7 +69,8 @@ func main() {
 				fmt.Printf("✅ Subscription confirmed: %v\n", data)
 			} else if op == "auth" {
 				if success, ok := data["success"].(bool); ok && success {
-					fmt.Println("✅ Authentication successful!\n")
+					fmt.Println("✅ Authentication successful!")
+					fmt.Println()
 				}
 			}
 		}

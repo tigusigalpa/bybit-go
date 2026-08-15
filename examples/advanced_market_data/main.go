@@ -24,7 +24,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("=== Bybit Go SDK - Advanced Market Data Example ===\n")
+	fmt.Println("=== Bybit Go SDK - Advanced Market Data Example ===")
+	fmt.Println()
 
 	fmt.Println("📊 Getting Open Interest...")
 	openInterest, err := client.GetOpenInterest(map[string]interface{}{

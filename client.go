@@ -44,6 +44,22 @@ type ClientConfig struct {
 	HTTPClient    *http.Client
 }
 
+// HTTPError describes a response that could not be completed at the HTTP layer.
+// A successful Bybit HTTP response can still contain a non-zero retCode; callers
+// receive that API response unchanged and can inspect it according to their flow.
+type HTTPError struct {
+	StatusCode int
+	Status     string
+	Body       string
+}
+
+func (e *HTTPError) Error() string {
+	if e.Body == "" {
+		return fmt.Sprintf("bybit API request failed: %s", e.Status)
+	}
+	return fmt.Sprintf("bybit API request failed: %s: %s", e.Status, e.Body)
+}
+
 func NewClient(config ClientConfig) (*Client, error) {
 	if config.Region == "" {
 		config.Region = "global"
@@ -51,8 +67,15 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if config.RecvWindow == 0 {
 		config.RecvWindow = 5000
 	}
+	config.Signature = strings.ToLower(strings.TrimSpace(config.Signature))
 	if config.Signature == "" {
 		config.Signature = "hmac"
+	}
+	if config.Signature != "hmac" && config.Signature != "rsa" {
+		return nil, fmt.Errorf("unsupported signature type %q: use hmac or rsa", config.Signature)
+	}
+	if config.Signature == "rsa" && config.RSAPrivateKey == "" {
+		return nil, fmt.Errorf("RSA signature requires RSAPrivateKey")
 	}
 	if config.HTTPClient == nil {
 		config.HTTPClient = &http.Client{
@@ -71,7 +94,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 		fees:       defaultFees(),
 	}
 
-	if config.Signature == "rsa" && config.RSAPrivateKey != "" {
+	if config.Signature == "rsa" {
 		key, err := parseRSAPrivateKey(config.RSAPrivateKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse RSA private key: %w", err)
@@ -275,8 +298,12 @@ func (c *Client) Request(method, path string, params map[string]interface{}) (ma
 	}
 
 	var result map[string]interface{}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(bodyBytes)}
+	}
+
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
-		return map[string]interface{}{"raw": string(bodyBytes)}, nil
+		return nil, fmt.Errorf("decode Bybit response: %w", err)
 	}
 
 	return result, nil
@@ -387,6 +414,9 @@ func (c *Client) SetTradingStop(params map[string]interface{}) (map[string]inter
 }
 
 func (c *Client) SetLeverage(category, symbol string, leverage float64, side *string) (map[string]interface{}, error) {
+	if leverage <= 0 {
+		return nil, fmt.Errorf("leverage must be greater than zero")
+	}
 	payload := map[string]interface{}{
 		"category": category,
 		"symbol":   symbol,
@@ -395,10 +425,13 @@ func (c *Client) SetLeverage(category, symbol string, leverage float64, side *st
 	leverageStr := fmt.Sprintf("%.2f", leverage)
 
 	if side != nil {
-		if *side == "Buy" {
+		switch strings.ToLower(*side) {
+		case "buy":
 			payload["buyLeverage"] = leverageStr
-		} else if *side == "Sell" {
+		case "sell":
 			payload["sellLeverage"] = leverageStr
+		default:
+			return nil, fmt.Errorf("side must be Buy or Sell")
 		}
 	} else {
 		payload["buyLeverage"] = leverageStr
