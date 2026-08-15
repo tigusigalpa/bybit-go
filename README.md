@@ -12,6 +12,8 @@
 
 A small Go client for the [Bybit V5 API](https://bybit-exchange.github.io/docs/v5/intro). It makes it easier to get started with the REST API, demo trading, WebSocket streams, and TradFi instruments without imposing an application architecture on your project.
 
+> 📚 **Looking for the deeper dive?** Explore the [bybit-go Wiki](https://github.com/tigusigalpa/bybit-go/wiki) for guides, endpoint notes, and extended documentation.
+
 > Trading involves risk. Test both the integration and your strategy in the demo environment first, use narrowly scoped API-key permissions, and never commit keys to a repository.
 
 ## Contents
