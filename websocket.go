@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// WebSocket manages a Bybit WebSocket connection and its subscriptions.
 type WebSocket struct {
 	apiKey          string
 	apiSecret       string
@@ -26,6 +27,7 @@ type WebSocket struct {
 	connected       bool
 }
 
+// WebSocketConfig configures a WebSocket client.
 type WebSocketConfig struct {
 	APIKey    string
 	APISecret string
@@ -34,6 +36,7 @@ type WebSocketConfig struct {
 	IsPrivate bool
 }
 
+// NewWebSocket creates a WebSocket client with the supplied configuration.
 func NewWebSocket(config WebSocketConfig) *WebSocket {
 	if config.Region == "" {
 		config.Region = "global"
@@ -91,6 +94,7 @@ func (ws *WebSocket) getWebSocketURL() string {
 	}
 }
 
+// Connect establishes the WebSocket connection and authenticates private clients.
 func (ws *WebSocket) Connect() error {
 	url := ws.getWebSocketURL()
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
@@ -129,6 +133,7 @@ func (ws *WebSocket) authenticate() error {
 	return ws.Send(authMessage)
 }
 
+// Send serializes and sends a WebSocket message, connecting first when necessary.
 func (ws *WebSocket) Send(message map[string]interface{}) error {
 	ws.mu.RLock()
 	if !ws.connected || ws.conn == nil {
@@ -149,6 +154,7 @@ func (ws *WebSocket) Send(message map[string]interface{}) error {
 	return conn.WriteMessage(websocket.TextMessage, data)
 }
 
+// Subscribe sends a subscription request for the supplied topics.
 func (ws *WebSocket) Subscribe(topics []string) error {
 	message := map[string]interface{}{
 		"op":   "subscribe",
@@ -162,6 +168,7 @@ func (ws *WebSocket) Subscribe(topics []string) error {
 	return ws.Send(message)
 }
 
+// Unsubscribe sends an unsubscribe request for the supplied topics.
 func (ws *WebSocket) Unsubscribe(topics []string) error {
 	message := map[string]interface{}{
 		"op":   "unsubscribe",
@@ -182,48 +189,58 @@ func (ws *WebSocket) Unsubscribe(topics []string) error {
 	return ws.Send(message)
 }
 
+// SubscribeOrderbook subscribes to an order book topic for a symbol and depth.
 func (ws *WebSocket) SubscribeOrderbook(symbol string, depth int) error {
 	topic := fmt.Sprintf("orderbook.%d.%s", depth, symbol)
 	return ws.Subscribe([]string{topic})
 }
 
+// SubscribeTrade subscribes to public trade updates for a symbol.
 func (ws *WebSocket) SubscribeTrade(symbol string) error {
 	topic := fmt.Sprintf("publicTrade.%s", symbol)
 	return ws.Subscribe([]string{topic})
 }
 
+// SubscribeTicker subscribes to ticker updates for a symbol.
 func (ws *WebSocket) SubscribeTicker(symbol string) error {
 	topic := fmt.Sprintf("tickers.%s", symbol)
 	return ws.Subscribe([]string{topic})
 }
 
+// SubscribeKline subscribes to candlestick updates for a symbol and interval.
 func (ws *WebSocket) SubscribeKline(symbol, interval string) error {
 	topic := fmt.Sprintf("kline.%s.%s", interval, symbol)
 	return ws.Subscribe([]string{topic})
 }
 
+// SubscribePosition subscribes to private position updates.
 func (ws *WebSocket) SubscribePosition() error {
 	return ws.Subscribe([]string{"position"})
 }
 
+// SubscribeExecution subscribes to private execution updates.
 func (ws *WebSocket) SubscribeExecution() error {
 	return ws.Subscribe([]string{"execution"})
 }
 
+// SubscribeOrder subscribes to private order updates.
 func (ws *WebSocket) SubscribeOrder() error {
 	return ws.Subscribe([]string{"order"})
 }
 
+// SubscribeWallet subscribes to private wallet updates.
 func (ws *WebSocket) SubscribeWallet() error {
 	return ws.Subscribe([]string{"wallet"})
 }
 
+// OnMessage registers the callback invoked for each decoded message or read error.
 func (ws *WebSocket) OnMessage(callback func(map[string]interface{})) {
 	ws.mu.Lock()
 	ws.messageCallback = callback
 	ws.mu.Unlock()
 }
 
+// Listen reads messages until the connection closes or a read error occurs.
 func (ws *WebSocket) Listen() error {
 	ws.mu.RLock()
 	if !ws.connected || ws.conn == nil {
@@ -280,10 +297,12 @@ func (ws *WebSocket) Listen() error {
 	return nil
 }
 
+// Ping sends a ping operation to the WebSocket server.
 func (ws *WebSocket) Ping() error {
 	return ws.Send(map[string]interface{}{"op": "ping"})
 }
 
+// Close closes the active WebSocket connection.
 func (ws *WebSocket) Close() error {
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
@@ -298,6 +317,7 @@ func (ws *WebSocket) Close() error {
 	return nil
 }
 
+// GetSubscriptions returns a copy of locally tracked subscriptions.
 func (ws *WebSocket) GetSubscriptions() []string {
 	ws.mu.RLock()
 	defer ws.mu.RUnlock()
@@ -307,6 +327,7 @@ func (ws *WebSocket) GetSubscriptions() []string {
 	return subs
 }
 
+// IsConnected reports whether the client currently has an active local connection.
 func (ws *WebSocket) IsConnected() bool {
 	ws.mu.RLock()
 	defer ws.mu.RUnlock()

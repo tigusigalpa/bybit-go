@@ -5,6 +5,7 @@
 [![CI](https://github.com/tigusigalpa/bybit-go/actions/workflows/ci.yml/badge.svg)](https://github.com/tigusigalpa/bybit-go/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-go%20test%20--race-brightgreen)](https://github.com/tigusigalpa/bybit-go/actions/workflows/ci.yml)
 [![Go vet](https://img.shields.io/badge/code%20analysis-go%20vet-brightgreen)](https://github.com/tigusigalpa/bybit-go/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/tigusigalpa/bybit-go/graph/badge.svg)](https://codecov.io/gh/tigusigalpa/bybit-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tigusigalpa/bybit-go)](https://goreportcard.com/report/github.com/tigusigalpa/bybit-go)
 [![Go Reference](https://pkg.go.dev/badge/github.com/tigusigalpa/bybit-go.svg)](https://pkg.go.dev/github.com/tigusigalpa/bybit-go)
 [![Go version](https://img.shields.io/github/go-mod/go-version/tigusigalpa/bybit-go)](go.mod)
@@ -299,6 +300,6 @@ The repository's GitHub Actions workflow additionally runs the test suite with G
 ## Documentation and license
 
 - [Official Bybit V5 documentation](https://bybit-exchange.github.io/docs/v5/intro)
-- [Extended TradFi notes](wiki-tradfi.md)
+- [TradFi Wiki guide](wiki/TradFi.md)
 - [Installation instructions](INSTALLATION.md)
 - [MIT License](LICENSE)

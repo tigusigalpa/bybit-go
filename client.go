@@ -21,6 +21,7 @@ import (
 	"time"
 )
 
+// Client provides signed REST access to the Bybit V5 API.
 type Client struct {
 	apiKey        string
 	apiSecret     string
@@ -33,6 +34,7 @@ type Client struct {
 	fees          map[string]map[string]map[string]float64
 }
 
+// ClientConfig configures a Client instance.
 type ClientConfig struct {
 	APIKey        string
 	APISecret     string
@@ -60,6 +62,7 @@ func (e *HTTPError) Error() string {
 	return fmt.Sprintf("bybit API request failed: %s: %s", e.Status, e.Body)
 }
 
+// NewClient creates a REST client with the supplied configuration.
 func NewClient(config ClientConfig) (*Client, error) {
 	if config.Region == "" {
 		config.Region = "global"
@@ -144,6 +147,7 @@ func defaultFees() map[string]map[string]map[string]float64 {
 	}
 }
 
+// BaseURI returns the REST API base URL selected by the client's demo and region settings.
 func (c *Client) BaseURI() string {
 	if c.demo {
 		return "https://api-demo.bybit.com"
@@ -248,6 +252,7 @@ func (c *Client) headers(method, path string, params map[string]interface{}) (ma
 	return headers, nil
 }
 
+// Request performs a signed Bybit REST request and decodes its JSON response.
 func (c *Client) Request(method, path string, params map[string]interface{}) (map[string]interface{}, error) {
 	method = strings.ToUpper(method)
 	fullURL := c.BaseURI() + path
@@ -309,110 +314,137 @@ func (c *Client) Request(method, path string, params map[string]interface{}) (ma
 	return result, nil
 }
 
+// Endpoint returns the active REST API endpoint.
 func (c *Client) Endpoint() string {
 	return c.BaseURI()
 }
 
+// GetServerTime returns the current Bybit server time.
 func (c *Client) GetServerTime() (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/time", nil)
 }
 
+// GetTickers returns ticker data for the supplied market parameters.
 func (c *Client) GetTickers(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/tickers", params)
 }
 
+// GetKline returns candlestick data for the supplied market parameters.
 func (c *Client) GetKline(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/kline", params)
 }
 
+// GetOrderbook returns an order book snapshot for the supplied market parameters.
 func (c *Client) GetOrderbook(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/orderbook", params)
 }
 
+// GetRPIOrderbook returns an RPI order book snapshot for the supplied parameters.
 func (c *Client) GetRPIOrderbook(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/rpi-orderbook", params)
 }
 
+// GetOpenInterest returns open-interest data for the supplied parameters.
 func (c *Client) GetOpenInterest(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/open-interest", params)
 }
 
+// GetRecentTrades returns recent public trades for the supplied parameters.
 func (c *Client) GetRecentTrades(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/recent-trade", params)
 }
 
+// GetFundingRateHistory returns funding-rate history for the supplied parameters.
 func (c *Client) GetFundingRateHistory(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/funding/history", params)
 }
 
+// GetHistoricalVolatility returns historical volatility data for the supplied parameters.
 func (c *Client) GetHistoricalVolatility(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/historical-volatility", params)
 }
 
+// GetInsurance returns insurance-pool data for the supplied parameters.
 func (c *Client) GetInsurance(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/insurance", params)
 }
 
+// GetRiskLimit returns risk-limit data for the supplied parameters.
 func (c *Client) GetRiskLimit(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/market/risk-limit", params)
 }
 
+// CreateOrder submits an order using the supplied Bybit V5 fields.
 func (c *Client) CreateOrder(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/order/create", params)
 }
 
+// GetOpenOrders returns current open orders for the supplied parameters.
 func (c *Client) GetOpenOrders(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/order/realtime", params)
 }
 
+// CancelOrder cancels an order identified by the supplied parameters.
 func (c *Client) CancelOrder(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/order/cancel", params)
 }
 
+// AmendOrder updates an existing order using the supplied parameters.
 func (c *Client) AmendOrder(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/order/amend", params)
 }
 
+// CancelAllOrders cancels all orders matching the supplied parameters.
 func (c *Client) CancelAllOrders(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/order/cancel-all", params)
 }
 
+// GetHistoryOrders returns historical orders for the supplied parameters.
 func (c *Client) GetHistoryOrders(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/order/history", params)
 }
 
+// GetWalletBalance returns wallet balances for the supplied account parameters.
 func (c *Client) GetWalletBalance(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/account/wallet-balance", params)
 }
 
+// GetTransferableAmount returns the transferable amount for the supplied parameters.
 func (c *Client) GetTransferableAmount(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/account/transferable-amount", params)
 }
 
+// GetTransactionLog returns account transaction records for the supplied parameters.
 func (c *Client) GetTransactionLog(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/account/transaction-log", params)
 }
 
+// GetAccountInfo returns metadata for the authenticated account.
 func (c *Client) GetAccountInfo() (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/account/info", nil)
 }
 
+// GetAccountInstrumentsInfo returns account-specific instrument information.
 func (c *Client) GetAccountInstrumentsInfo(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/account/instruments", params)
 }
 
+// GetPositions returns positions matching the supplied parameters.
 func (c *Client) GetPositions(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/position/list", params)
 }
 
+// SwitchPositionMode changes the position mode using the supplied parameters.
 func (c *Client) SwitchPositionMode(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/position/switch-mode", params)
 }
 
+// SetTradingStop configures take-profit, stop-loss, or trailing-stop settings.
 func (c *Client) SetTradingStop(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/position/trading-stop", params)
 }
 
+// SetLeverage sets leverage for a symbol and optional Buy or Sell side.
 func (c *Client) SetLeverage(category, symbol string, leverage float64, side *string) (map[string]interface{}, error) {
 	if leverage <= 0 {
 		return nil, fmt.Errorf("leverage must be greater than zero")
@@ -441,30 +473,37 @@ func (c *Client) SetLeverage(category, symbol string, leverage float64, side *st
 	return c.Request("POST", "/v5/position/set-leverage", payload)
 }
 
+// SetAutoAddMargin enables or disables automatic margin additions.
 func (c *Client) SetAutoAddMargin(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/position/set-auto-add-margin", params)
 }
 
+// AddOrReduceMargin adjusts isolated-position margin using the supplied parameters.
 func (c *Client) AddOrReduceMargin(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/position/add-margin", params)
 }
 
+// GetClosedPnL returns closed profit-and-loss records for the supplied parameters.
 func (c *Client) GetClosedPnL(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/position/closed-pnl", params)
 }
 
+// GetClosedOptionsPositions returns closed options-position records.
 func (c *Client) GetClosedOptionsPositions(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/position/close-position", params)
 }
 
+// MovePosition transfers a position using the supplied parameters.
 func (c *Client) MovePosition(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/position/move-positions", params)
 }
 
+// GetMovePositionHistory returns position-transfer history for the supplied parameters.
 func (c *Client) GetMovePositionHistory(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("GET", "/v5/position/move-position-history", params)
 }
 
+// ConfirmNewRiskLimit confirms a pending maintenance-margin requirement change.
 func (c *Client) ConfirmNewRiskLimit(params map[string]interface{}) (map[string]interface{}, error) {
 	return c.Request("POST", "/v5/position/confirm-pending-mmr", params)
 }
@@ -515,6 +554,7 @@ func (c *Client) qtyFromMargin(margin, price, leverage float64) float64 {
 	return float64(int(qty*1000)) / 1000
 }
 
+// PlaceOrderParams describes the higher-level order helper input.
 type PlaceOrderParams struct {
 	Type      string
 	Symbol    string
@@ -527,12 +567,14 @@ type PlaceOrderParams struct {
 	Extra     map[string]interface{}
 }
 
+// SlTpParams describes optional take-profit and stop-loss settings for PlaceOrder.
 type SlTpParams struct {
 	Type       string
 	TakeProfit *float64
 	StopLoss   *float64
 }
 
+// PlaceOrder builds and submits an order from the higher-level PlaceOrderParams structure.
 func (c *Client) PlaceOrder(params PlaceOrderParams) (map[string]interface{}, error) {
 	isSpot := strings.ToLower(params.Type) == "spot"
 	category := "linear"
@@ -664,6 +706,7 @@ func (c *Client) PlaceOrder(params PlaceOrderParams) (map[string]interface{}, er
 	return c.Request("POST", "/v5/order/create", payload)
 }
 
+// ComputeFee estimates a fee from the client's built-in fee table.
 func (c *Client) ComputeFee(tradeType string, volume float64, level, liquidity string) float64 {
 	typeKey := "derivatives"
 	if strings.ToLower(tradeType) == "spot" {
