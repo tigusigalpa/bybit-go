@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   test:
@@ -25,6 +26,12 @@ jobs:
       - name: Verify modules
         run: go mod tidy && git diff --exit-code -- go.mod go.sum
       - name: Test
-        run: go test -race -coverprofile=coverage.out ./...
+        run: go test -race ./... && go test -coverprofile=coverage.out .
       - name: Vet
         run: go vet ./...
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.out
+          flags: unit
+          use_oidc: true
