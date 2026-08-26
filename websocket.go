@@ -24,6 +24,7 @@ type WebSocket struct {
 	subscriptions   []string
 	messageCallback func(map[string]interface{})
 	mu              sync.RWMutex
+	writeMu         sync.Mutex
 	connected       bool
 }
 
@@ -150,6 +151,10 @@ func (ws *WebSocket) Send(message map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	// gorilla/websocket supports one concurrent writer per connection.
+	ws.writeMu.Lock()
+	defer ws.writeMu.Unlock()
 
 	return conn.WriteMessage(websocket.TextMessage, data)
 }
