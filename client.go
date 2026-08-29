@@ -623,7 +623,9 @@ func (c *Client) PlaceOrder(params PlaceOrderParams) (map[string]interface{}, er
 		leverage := 1.0
 		if params.Leverage != nil && *params.Leverage > 0 {
 			leverage = *params.Leverage
-			c.SetLeverage(category, params.Symbol, leverage, &side)
+			if _, err := c.SetLeverage(category, params.Symbol, leverage, &side); err != nil {
+				return nil, fmt.Errorf("set leverage: %w", err)
+			}
 		}
 
 		if entryPrice < 0.0000001 {

@@ -295,7 +295,9 @@ func (ws *WebSocket) Listen() error {
 		}
 
 		if op, ok := data["op"].(string); ok && op == "ping" {
-			ws.Send(map[string]interface{}{"op": "pong"})
+			if err := ws.Send(map[string]interface{}{"op": "pong"}); err != nil {
+				return err
+			}
 		}
 	}
 

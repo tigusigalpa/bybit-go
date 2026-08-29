@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -105,6 +106,26 @@ func TestClientHelpersAndPlaceOrder(t *testing.T) {
 		if _, err := client.PlaceOrder(order); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestPlaceOrderPropagatesLeverageError(t *testing.T) {
+	client, err := NewClient(ClientConfig{HTTPClient: &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Path == "/v5/position/set-leverage" {
+			return response(req, http.StatusInternalServerError, `{"retMsg":"unavailable"}`), nil
+		}
+		return response(req, http.StatusOK, `{"retCode":0,"result":{"list":[{"lastPrice":"100"}]}}`), nil
+	})}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	price, leverage := 100.0, 2.0
+	_, err = client.PlaceOrder(PlaceOrderParams{
+		Type: "linear", Symbol: "BTCUSDT", Price: &price, Leverage: &leverage, Size: 10,
+	})
+	if err == nil || !strings.Contains(err.Error(), "set leverage") {
+		t.Fatalf("PlaceOrder() error = %v, want leverage error", err)
 	}
 }
 
