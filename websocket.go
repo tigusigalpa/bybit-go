@@ -233,6 +233,16 @@ func (ws *WebSocket) SubscribeOrder() error {
 	return ws.Subscribe([]string{"order"})
 }
 
+// SubscribeXStockOrder subscribes to private Spot order updates, including xStocks orders.
+func (ws *WebSocket) SubscribeXStockOrder() error {
+	return ws.Subscribe([]string{"order.spot"})
+}
+
+// SubscribeXStockExecution subscribes to private Spot execution updates, including xStocks fills.
+func (ws *WebSocket) SubscribeXStockExecution() error {
+	return ws.Subscribe([]string{"execution.spot"})
+}
+
 // SubscribeWallet subscribes to private wallet updates.
 func (ws *WebSocket) SubscribeWallet() error {
 	return ws.Subscribe([]string{"wallet"})

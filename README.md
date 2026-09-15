@@ -29,6 +29,7 @@ A small Go client for the [Bybit V5 API](https://bybit-exchange.github.io/docs/v
 - [Errors and response handling](#errors-and-response-handling)
 - [RSA signatures](#rsa-signatures)
 - [WebSocket](#websocket)
+- [xStocks](#xstocks)
 - [TradFi](#tradfi)
 - [Examples, testing, and contributing](#examples-testing-and-contributing)
 
@@ -38,6 +39,7 @@ A small Go client for the [Bybit V5 API](https://bybit-exchange.github.io/docs/v
 - HMAC-SHA256 and RSA-SHA256 signing for REST requests;
 - demo mode plus regional REST and WebSocket endpoints;
 - public and private WebSocket subscriptions;
+- typed discovery, validation, and decimal-safe conversion helpers for xStocks Spot tokens;
 - convenience helpers for TradFi instruments (forex, metals, stocks, and indices);
 - standalone working examples in [`examples/`](examples/README.md).
 
@@ -270,6 +272,24 @@ The package's public WebSocket connects to the spot endpoint. For private stream
 | `SubscribePosition`, `SubscribeOrder`, `SubscribeExecution`, `SubscribeWallet` | Private account topics |
 
 Call `Unsubscribe` with the exact topics when they are no longer needed. Your application owns the connection lifecycle and should reconnect after an error; on reconnect, subscribe again using `GetSubscriptions` as your source of truth.
+
+## xStocks
+
+xStocks are regular V5 Spot instruments, not TradFi CFDs. Discover the live catalogue with `GetXStocks()`—the client accepts an instrument as xStock only when Bybit returns the exact `symbolType: "xstocks"` value.
+
+```go
+instruments, err := client.GetXStocks()
+if err != nil {
+	log.Fatal(err)
+}
+
+order, err := client.PlaceXStockOrder(bybit.XStockOrderParams{
+	Symbol: "AAPLXUSDT", Side: "Buy", OrderType: "Market",
+	Qty: "100", MarketUnit: "quoteCoin",
+})
+```
+
+`PlaceXStockOrder` refreshes metadata, checks the status, precision, tick size, limits, and submits a standard Spot request with margin disabled. Decimal helper functions such as `ToXStockTokenQuantity` and `ToXStockTokenPrice` retain exact arithmetic and apply the required rounding policy. Read the [xStocks Wiki guide](wiki/XStocks.md) before placing production orders.
 
 ## TradFi
 
