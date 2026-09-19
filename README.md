@@ -7,7 +7,6 @@
 [![Go vet](https://img.shields.io/badge/code%20analysis-go%20vet-brightgreen)](https://github.com/tigusigalpa/bybit-go/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/tigusigalpa/bybit-go/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/tigusigalpa/bybit-go/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/tigusigalpa/bybit-go/graph/badge.svg)](https://codecov.io/gh/tigusigalpa/bybit-go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/tigusigalpa/bybit-go)](https://goreportcard.com/report/github.com/tigusigalpa/bybit-go)
 [![Go Reference](https://pkg.go.dev/badge/github.com/tigusigalpa/bybit-go.svg)](https://pkg.go.dev/github.com/tigusigalpa/bybit-go)
 [![Go version](https://img.shields.io/github/go-mod/go-version/tigusigalpa/bybit-go)](go.mod)
 [![License](https://img.shields.io/github/license/tigusigalpa/bybit-go)](LICENSE)
