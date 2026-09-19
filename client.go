@@ -177,6 +177,9 @@ func (c *Client) timestamp() string {
 
 func (c *Client) signString(data string) (string, error) {
 	if c.signature == "rsa" && c.rsaPrivateKey != nil {
+		// lgtm[go/weak-sensitive-data-hashing]
+		// SHA-256 is required for Bybit's RSA-SHA256 request-signing protocol;
+		// this is a digital-signature digest, not password hashing.
 		hash := sha256.Sum256([]byte(data))
 		signature, err := rsa.SignPKCS1v15(nil, c.rsaPrivateKey, crypto.SHA256, hash[:])
 		if err != nil {
