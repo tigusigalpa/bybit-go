@@ -348,7 +348,10 @@ func (ws *WebSocket) listen(ctx context.Context, notifyReadErrors bool) error {
 
 	done := make(chan struct{})
 	defer close(done)
-	defer conn.SetReadDeadline(time.Time{})
+	defer func() {
+		// The connection may already be closed after a read failure.
+		_ = conn.SetReadDeadline(time.Time{})
+	}()
 	go func() {
 		select {
 		case <-ctx.Done():
