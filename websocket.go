@@ -1,6 +1,7 @@
 package bybit
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
@@ -15,18 +16,35 @@ import (
 
 // WebSocket manages a Bybit WebSocket connection and its subscriptions.
 type WebSocket struct {
-	apiKey          string
-	apiSecret       string
-	demo            bool
-	region          string
-	isPrivate       bool
-	conn            *websocket.Conn
-	subscriptions   []string
-	messageCallback func(map[string]interface{})
-	mu              sync.RWMutex
-	writeMu         sync.Mutex
-	connected       bool
+	apiKey             string
+	apiSecret          string
+	demo               bool
+	region             string
+	isPrivate          bool
+	publicCategory     WebSocketCategory
+	configErr          error
+	conn               *websocket.Conn
+	subscriptions      []string
+	messageCallback    func(map[string]interface{})
+	rawMessageCallback RawMessageHandler
+	mu                 sync.RWMutex
+	writeMu            sync.Mutex
+	connected          bool
 }
+
+// WebSocketCategory identifies a Bybit public WebSocket product category.
+type WebSocketCategory string
+
+const (
+	// WebSocketCategorySpot connects to the public Spot stream.
+	WebSocketCategorySpot WebSocketCategory = "spot"
+	// WebSocketCategoryLinear connects to the public USDT/USDC perpetual and futures stream.
+	WebSocketCategoryLinear WebSocketCategory = "linear"
+)
+
+// RawMessageHandler receives an immutable copy of the exact JSON frame and the
+// time at which the frame was received, before the SDK attempts to decode it.
+type RawMessageHandler func(message []byte, receivedAt time.Time)
 
 // WebSocketConfig configures a WebSocket client.
 type WebSocketConfig struct {
@@ -35,6 +53,9 @@ type WebSocketConfig struct {
 	Demo      bool
 	Region    string
 	IsPrivate bool
+	// PublicCategory selects the product category for public connections. Empty defaults to Spot.
+	// Private connections always use Bybit's private endpoint.
+	PublicCategory WebSocketCategory
 }
 
 // NewWebSocket creates a WebSocket client with the supplied configuration.
@@ -43,22 +64,45 @@ func NewWebSocket(config WebSocketConfig) *WebSocket {
 		config.Region = "global"
 	}
 
-	return &WebSocket{
-		apiKey:        config.APIKey,
-		apiSecret:     config.APISecret,
-		demo:          config.Demo,
-		region:        config.Region,
-		isPrivate:     config.IsPrivate,
-		subscriptions: make([]string, 0),
+	category := WebSocketCategory(strings.ToLower(string(config.PublicCategory)))
+	if category == "" {
+		category = WebSocketCategorySpot
 	}
+
+	ws := &WebSocket{
+		apiKey:         config.APIKey,
+		apiSecret:      config.APISecret,
+		demo:           config.Demo,
+		region:         config.Region,
+		isPrivate:      config.IsPrivate,
+		publicCategory: category,
+		subscriptions:  make([]string, 0),
+	}
+	if category != WebSocketCategorySpot && category != WebSocketCategoryLinear {
+		ws.configErr = fmt.Errorf("unsupported public WebSocket category %q", config.PublicCategory)
+	}
+	// Bybit documents regional WebSocket domains, but not every regional host is
+	// documented for every public product. Keep existing Spot routing intact and
+	// reject Linear configurations that would require guessing a regional URL.
+	if !config.IsPrivate && category == WebSocketCategoryLinear && (config.Demo || (strings.ToLower(config.Region) != "" && strings.ToLower(config.Region) != "global")) {
+		ws.configErr = fmt.Errorf("public WebSocket category %q is only supported for the documented global endpoint", category)
+	}
+	return ws
 }
 
 func (ws *WebSocket) getWebSocketURL() string {
+	if ws.configErr != nil {
+		return ""
+	}
 	if ws.demo {
 		if ws.isPrivate {
 			return "wss://stream-demo.bybit.com/v5/private"
 		}
-		return "wss://stream-demo.bybit.com/v5/public/spot"
+		return "wss://stream-demo.bybit.com/v5/public/" + string(ws.publicCategory)
+	}
+
+	if !ws.isPrivate && ws.publicCategory == WebSocketCategoryLinear {
+		return "wss://stream.bybit.com/v5/public/linear"
 	}
 
 	switch strings.ToLower(ws.region) {
@@ -97,6 +141,9 @@ func (ws *WebSocket) getWebSocketURL() string {
 
 // Connect establishes the WebSocket connection and authenticates private clients.
 func (ws *WebSocket) Connect() error {
+	if ws.configErr != nil {
+		return ws.configErr
+	}
 	url := ws.getWebSocketURL()
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
@@ -248,15 +295,40 @@ func (ws *WebSocket) SubscribeWallet() error {
 	return ws.Subscribe([]string{"wallet"})
 }
 
-// OnMessage registers the callback invoked for each decoded message or read error.
+// OnMessage registers the callback invoked for each successfully decoded message.
 func (ws *WebSocket) OnMessage(callback func(map[string]interface{})) {
 	ws.mu.Lock()
 	ws.messageCallback = callback
 	ws.mu.Unlock()
 }
 
+// OnRawMessage registers the callback invoked for every received JSON frame before decoding.
+// The callback receives its own byte slice and may retain or modify it safely.
+func (ws *WebSocket) OnRawMessage(callback RawMessageHandler) {
+	ws.mu.Lock()
+	ws.rawMessageCallback = callback
+	ws.mu.Unlock()
+}
+
 // Listen reads messages until the connection closes or a read error occurs.
 func (ws *WebSocket) Listen() error {
+	err := ws.listen(context.Background(), true)
+	if err != nil {
+		return nil
+	}
+	return nil
+}
+
+// ListenContext reads messages until the context is cancelled or the connection fails.
+// A network failure is returned to the caller. Context cancellation returns ctx.Err().
+func (ws *WebSocket) ListenContext(ctx context.Context) error {
+	if ctx == nil {
+		return fmt.Errorf("WebSocket listen context must not be nil")
+	}
+	return ws.listen(ctx, false)
+}
+
+func (ws *WebSocket) listen(ctx context.Context, notifyReadErrors bool) error {
 	ws.mu.RLock()
 	if !ws.connected || ws.conn == nil {
 		ws.mu.RUnlock()
@@ -267,17 +339,33 @@ func (ws *WebSocket) Listen() error {
 		ws.mu.RUnlock()
 	}
 
-	for {
-		ws.mu.RLock()
-		conn := ws.conn
-		ws.mu.RUnlock()
+	ws.mu.RLock()
+	conn := ws.conn
+	ws.mu.RUnlock()
+	if conn == nil {
+		return fmt.Errorf("WebSocket is not connected")
+	}
 
-		if conn == nil {
-			break
+	done := make(chan struct{})
+	defer close(done)
+	defer conn.SetReadDeadline(time.Time{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = conn.SetReadDeadline(time.Now())
+		case <-done:
 		}
+	}()
 
+	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if !notifyReadErrors {
+				return err
+			}
 			ws.mu.RLock()
 			callback := ws.messageCallback
 			ws.mu.RUnlock()
@@ -288,7 +376,16 @@ func (ws *WebSocket) Listen() error {
 					"message": err.Error(),
 				})
 			}
-			break
+			return err
+		}
+		receivedAt := time.Now()
+
+		ws.mu.RLock()
+		rawCallback := ws.rawMessageCallback
+		ws.mu.RUnlock()
+		if rawCallback != nil {
+			rawCopy := append([]byte(nil), message...)
+			rawCallback(rawCopy, receivedAt)
 		}
 
 		var data map[string]interface{}
@@ -310,8 +407,6 @@ func (ws *WebSocket) Listen() error {
 			}
 		}
 	}
-
-	return nil
 }
 
 // Ping sends a ping operation to the WebSocket server.
@@ -322,16 +417,14 @@ func (ws *WebSocket) Ping() error {
 // Close closes the active WebSocket connection.
 func (ws *WebSocket) Close() error {
 	ws.mu.Lock()
-	defer ws.mu.Unlock()
-
-	if ws.conn != nil {
-		err := ws.conn.Close()
-		ws.conn = nil
-		ws.connected = false
-		return err
+	conn := ws.conn
+	ws.conn = nil
+	ws.connected = false
+	ws.mu.Unlock()
+	if conn == nil {
+		return nil
 	}
-
-	return nil
+	return conn.Close()
 }
 
 // GetSubscriptions returns a copy of locally tracked subscriptions.

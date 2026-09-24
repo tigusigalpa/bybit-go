@@ -260,7 +260,29 @@ if err := ws.Listen(); err != nil {
 }
 ```
 
-The package's public WebSocket connects to the spot endpoint. For private streams, set `IsPrivate` together with `APIKey` and `APISecret`; the client authenticates after connecting.
+The package's public WebSocket connects to the Spot endpoint by default. For private streams, set `IsPrivate` together with `APIKey` and `APISecret`; the client authenticates after connecting.
+
+For a linear perpetual market-data collector, select `WebSocketCategoryLinear`. Public streams do not require an API key. `OnRawMessage` receives the exact wire JSON and a receive timestamp before decoding, which is useful when persisting source events. In the kline payload, `confirm: true` means the candle is closed.
+
+```go
+ws := bybit.NewWebSocket(bybit.WebSocketConfig{
+	PublicCategory: bybit.WebSocketCategoryLinear,
+})
+defer ws.Close()
+
+ws.OnRawMessage(func(raw []byte, receivedAt time.Time) {
+	// Persist raw and receivedAt before normalizing the message.
+})
+
+if err := ws.SubscribeKline("BTCUSDT", "1"); err != nil {
+	log.Fatal(err)
+}
+if err := ws.ListenContext(context.Background()); err != nil {
+	log.Fatal(err) // reconnecting is owned by the application
+}
+```
+
+`ListenContext` returns context cancellation and unexpected network errors. The legacy `Listen` method remains available for existing integrations. The linear public endpoint is currently exposed only for the documented global environment; the SDK rejects regional or demo configurations rather than guessing a URL.
 
 | Helper | Topic |
 |---|---|
