@@ -31,10 +31,18 @@ func main() {
 
 	fmt.Println("🔌 Connecting to Bybit Private WebSocket...")
 
-	ws.SubscribePosition()
-	ws.SubscribeOrder()
-	ws.SubscribeExecution()
-	ws.SubscribeWallet()
+	if err := ws.SubscribePosition(); err != nil {
+		log.Fatal(err)
+	}
+	if err := ws.SubscribeOrder(); err != nil {
+		log.Fatal(err)
+	}
+	if err := ws.SubscribeExecution(); err != nil {
+		log.Fatal(err)
+	}
+	if err := ws.SubscribeWallet(); err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("✅ Subscribed to:")
 	fmt.Println("   - Position updates")
@@ -65,9 +73,10 @@ func main() {
 		}
 
 		if op, ok := data["op"].(string); ok {
-			if op == "subscribe" {
+			switch op {
+			case "subscribe":
 				fmt.Printf("✅ Subscription confirmed: %v\n", data)
-			} else if op == "auth" {
+			case "auth":
 				if success, ok := data["success"].(bool); ok && success {
 					fmt.Println("✅ Authentication successful!")
 					fmt.Println()
@@ -82,7 +91,7 @@ func main() {
 	go func() {
 		<-sigChan
 		fmt.Println("\n\n🛑 Shutting down...")
-		ws.Close()
+		_ = ws.Close()
 		os.Exit(0)
 	}()
 

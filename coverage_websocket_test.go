@@ -20,7 +20,9 @@ func TestWebSocketSubscriptionAndListenerFlow(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		defer conn.Close()
+		defer func() {
+			_ = conn.Close()
+		}()
 
 		for i := 0; i < 3; i++ {
 			_, message, err := conn.ReadMessage()

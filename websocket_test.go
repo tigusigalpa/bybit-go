@@ -55,7 +55,7 @@ func TestSubscribeKlineTopic(t *testing.T) {
 	})
 	defer server.Close()
 	ws := connectedWebSocket(t, server.URL)
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 	if err := ws.SubscribeKline("BTCUSDT", "1"); err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestListenContextRawAndDecodedCallbacks(t *testing.T) {
 	})
 	defer server.Close()
 	ws := connectedWebSocket(t, server.URL)
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 	var mu sync.Mutex
 	var rawMessages [][]byte
 	var receivedAt []time.Time
@@ -124,7 +124,7 @@ func TestListenContextCancellationAndUnexpectedClose(t *testing.T) {
 		server := newWebSocketServer(t, func(conn *websocket.Conn) { close(connected); time.Sleep(time.Second) })
 		defer server.Close()
 		ws := connectedWebSocket(t, server.URL)
-		defer ws.Close()
+		defer func() { _ = ws.Close() }()
 		ctx, cancel := context.WithCancel(context.Background())
 		result := make(chan error, 1)
 		go func() { result <- ws.ListenContext(ctx) }()
@@ -143,7 +143,7 @@ func TestListenContextCancellationAndUnexpectedClose(t *testing.T) {
 		server := newWebSocketServer(t, func(conn *websocket.Conn) { _ = conn.Close() })
 		defer server.Close()
 		ws := connectedWebSocket(t, server.URL)
-		defer ws.Close()
+		defer func() { _ = ws.Close() }()
 		called := false
 		ws.OnMessage(func(map[string]interface{}) { called = true })
 		if err := ws.ListenContext(context.Background()); err == nil {

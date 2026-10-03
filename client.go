@@ -298,7 +298,9 @@ func (c *Client) Request(method, path string, params map[string]interface{}) (ma
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {

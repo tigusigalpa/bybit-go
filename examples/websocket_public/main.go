@@ -22,10 +22,18 @@ func main() {
 
 	fmt.Println("🔌 Connecting to Bybit WebSocket...")
 
-	ws.SubscribeOrderbook("BTCUSDT", 50)
-	ws.SubscribeTrade("BTCUSDT")
-	ws.SubscribeTicker("BTCUSDT")
-	ws.SubscribeKline("BTCUSDT", "1")
+	if err := ws.SubscribeOrderbook("BTCUSDT", 50); err != nil {
+		log.Fatal(err)
+	}
+	if err := ws.SubscribeTrade("BTCUSDT"); err != nil {
+		log.Fatal(err)
+	}
+	if err := ws.SubscribeTicker("BTCUSDT"); err != nil {
+		log.Fatal(err)
+	}
+	if err := ws.SubscribeKline("BTCUSDT", "1"); err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("✅ Subscribed to:")
 	fmt.Println("   - Orderbook (depth 50)")
@@ -68,7 +76,7 @@ func main() {
 	go func() {
 		<-sigChan
 		fmt.Println("\n\n🛑 Shutting down...")
-		ws.Close()
+		_ = ws.Close()
 		os.Exit(0)
 	}()
 

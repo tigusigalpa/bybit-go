@@ -157,7 +157,7 @@ func (ws *WebSocket) Connect() error {
 
 	if ws.isPrivate && ws.apiKey != "" && ws.apiSecret != "" {
 		if err := ws.authenticate(); err != nil {
-			ws.Close()
+			_ = ws.Close()
 			return err
 		}
 	}

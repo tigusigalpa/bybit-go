@@ -89,8 +89,9 @@ func main() {
 							i+1, p["closedPnl"], p["symbol"])
 						if closedPnl, ok := p["closedPnl"].(string); ok {
 							var val float64
-							fmt.Sscanf(closedPnl, "%f", &val)
-							totalPnL += val
+							if _, err := fmt.Sscanf(closedPnl, "%f", &val); err == nil {
+								totalPnL += val
+							}
 						}
 					}
 				}
