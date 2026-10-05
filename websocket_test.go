@@ -42,6 +42,9 @@ func TestWebSocketURLsAndCategories(t *testing.T) {
 		if err := ws.Connect(); err == nil {
 			t.Fatalf("Connect() accepted unsupported configuration %+v", config)
 		}
+		if err := ws.Listen(); err == nil {
+			t.Fatalf("Listen() returned nil for unsupported configuration %+v", config)
+		}
 	}
 }
 

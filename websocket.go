@@ -311,11 +311,20 @@ func (ws *WebSocket) OnRawMessage(callback RawMessageHandler) {
 }
 
 // Listen reads messages until the connection closes or a read error occurs.
+// It connects first when necessary and returns any connection or
+// authentication error. Read errors that end the stream are delivered to the
+// OnMessage callback as {"error": true, "message": ...} and Listen then returns
+// nil; use ListenContext to receive them as an error instead.
 func (ws *WebSocket) Listen() error {
-	err := ws.listen(context.Background(), true)
-	if err != nil {
-		return nil
+	ws.mu.RLock()
+	connected := ws.connected && ws.conn != nil
+	ws.mu.RUnlock()
+	if !connected {
+		if err := ws.Connect(); err != nil {
+			return err
+		}
 	}
+	_ = ws.listen(context.Background(), true)
 	return nil
 }
 
