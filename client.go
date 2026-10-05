@@ -21,17 +21,21 @@ import (
 	"time"
 )
 
+// DefaultReceiptBodyLimit bounds the bytes retained by raw REST receipts.
+const DefaultReceiptBodyLimit int64 = 4 << 20
+
 // Client provides signed REST access to the Bybit V5 API.
 type Client struct {
-	apiKey        string
-	apiSecret     string
-	demo          bool
-	region        string
-	recvWindow    int
-	signature     string
-	rsaPrivateKey *rsa.PrivateKey
-	httpClient    *http.Client
-	fees          map[string]map[string]map[string]float64
+	apiKey           string
+	apiSecret        string
+	demo             bool
+	region           string
+	recvWindow       int
+	signature        string
+	rsaPrivateKey    *rsa.PrivateKey
+	httpClient       *http.Client
+	receiptBodyLimit int64
+	fees             map[string]map[string]map[string]float64
 }
 
 // ClientConfig configures a Client instance.
@@ -44,6 +48,8 @@ type ClientConfig struct {
 	Signature     string
 	RSAPrivateKey string
 	HTTPClient    *http.Client
+	// ReceiptBodyLimit bounds raw response bytes retained by receipt methods. Zero uses DefaultReceiptBodyLimit.
+	ReceiptBodyLimit int64
 }
 
 // HTTPError describes a response that could not be completed at the HTTP layer.
@@ -80,6 +86,12 @@ func NewClient(config ClientConfig) (*Client, error) {
 	if config.Signature == "rsa" && config.RSAPrivateKey == "" {
 		return nil, fmt.Errorf("RSA signature requires RSAPrivateKey")
 	}
+	if config.ReceiptBodyLimit < 0 {
+		return nil, fmt.Errorf("ReceiptBodyLimit must not be negative")
+	}
+	if config.ReceiptBodyLimit == 0 {
+		config.ReceiptBodyLimit = DefaultReceiptBodyLimit
+	}
 	if config.HTTPClient == nil {
 		config.HTTPClient = &http.Client{
 			Timeout: 30 * time.Second,
@@ -87,14 +99,15 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 
 	client := &Client{
-		apiKey:     config.APIKey,
-		apiSecret:  config.APISecret,
-		demo:       config.Demo,
-		region:     config.Region,
-		recvWindow: config.RecvWindow,
-		signature:  config.Signature,
-		httpClient: config.HTTPClient,
-		fees:       defaultFees(),
+		apiKey:           config.APIKey,
+		apiSecret:        config.APISecret,
+		demo:             config.Demo,
+		region:           config.Region,
+		recvWindow:       config.RecvWindow,
+		signature:        config.Signature,
+		httpClient:       config.HTTPClient,
+		receiptBodyLimit: config.ReceiptBodyLimit,
+		fees:             defaultFees(),
 	}
 
 	if config.Signature == "rsa" {

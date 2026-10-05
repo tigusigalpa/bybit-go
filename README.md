@@ -68,6 +68,7 @@ Create one client and reuse it for the lifetime of your application. The default
 | `Signature` | `hmac` | Signature algorithm: `hmac` or `rsa`. |
 | `RSAPrivateKey` | — | PEM private key, required when `Signature` is `rsa`. |
 | `HTTPClient` | 30 s timeout | Optional custom HTTP client. |
+| `ReceiptBodyLimit` | 4 MiB | Maximum response bytes retained by raw REST receipt methods. |
 
 ```go
 httpClient := &http.Client{Timeout: 10 * time.Second}
@@ -151,6 +152,30 @@ trades, err := client.GetRecentTrades(map[string]interface{}{
 ```
 
 Available market helpers include `GetServerTime`, `GetTickers`, `GetKline`, `GetOrderbook`, `GetRPIOrderbook`, `GetOpenInterest`, `GetRecentTrades`, `GetFundingRateHistory`, `GetHistoricalVolatility`, `GetInsurance`, and `GetRiskLimit`.
+
+### Exact kline receipts
+
+`GetKlineReceipt` captures the exact public REST response bytes for archival, repair, or backfill workflows. It uses the configured HTTP client and endpoint, requires no API key, and does not decode or normalize the Bybit payload. In particular, it preserves kline array ordering and numeric/string lexemes exactly as sent by the server.
+
+```go
+receipt, err := client.GetKlineReceipt(context.Background(), map[string]interface{}{
+	"category": "linear",
+	"symbol":   "BTCUSDT",
+	"interval": "1",
+	"start":    "1700000000000",
+	"end":      "1700000059999",
+	"limit":    200,
+})
+if err != nil {
+	// A non-2xx response, cancellation, read failure, close failure, or
+	// response-size limit can still return a non-nil receipt with evidence.
+	log.Fatal(err)
+}
+
+archive(receipt.ResponseBody(), receipt.ResponseBodySHA256(), receipt.CapturedAt())
+```
+
+The response limit is configured by `ClientConfig.ReceiptBodyLimit` and defaults to 4 MiB. A receipt is complete only when the entire body was read and closed without error. `ResponseBody`, `ResponseHeaders`, and request metadata are exposed through defensive-copy accessors; sensitive response headers are excluded. A complete HTTP receipt does **not** validate Bybit's application-level `retCode`—callers must inspect that result themselves.
 
 ### Account and positions
 
