@@ -299,7 +299,7 @@ func TestKlineReceiptRejectsUndocumentedFieldsWithoutSending(t *testing.T) {
 	if receipt, err := client.GetKlineReceipt(context.Background(), map[string]interface{}{"api_key": "synthetic-secret"}); receipt != nil || err == nil || strings.Contains(err.Error(), "synthetic-secret") {
 		t.Fatalf("receipt=%v err=%v", receipt, err)
 	}
-	if receipt, err := client.GetKlineReceipt(nil, nil); receipt != nil || err == nil {
+	if receipt, err := client.GetKlineReceipt(nil, nil); receipt != nil || err == nil { //nolint:staticcheck // SA1012: intentionally verify nil-context rejection before sending a request.
 		t.Fatalf("receipt=%v err=%v", receipt, err)
 	}
 }
