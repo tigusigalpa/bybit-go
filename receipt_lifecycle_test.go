@@ -113,16 +113,44 @@ func TestKlineReceiptDeadlineAndHTTPClientTimeout(t *testing.T) {
 			}
 			client := localReceiptClient(t, httpClient, server.URL)
 			receipt, err := client.GetKlineReceipt(ctx, klineReceiptParams())
-			if receipt == nil || receipt.Complete() || string(receipt.ResponseBody()) != "partial" || !errors.Is(err, context.DeadlineExceeded) {
+			if receipt == nil || receipt.Complete() || string(receipt.ResponseBody()) != "partial" || err == nil {
 				t.Fatalf("receipt=%v err=%v", receipt, err)
 			}
-			if mode == "injected client timeout" {
+			if mode == "context deadline" {
+				if !errors.Is(err, context.DeadlineExceeded) {
+					t.Fatalf("context deadline cause lost: %v", err)
+				}
+			} else {
+				// Go 1.21 client timeouts implement net.Error but do not match
+				// context.DeadlineExceeded; preserve the transport's error as-is.
 				var timeout net.Error
 				if !errors.As(err, &timeout) || !timeout.Timeout() {
 					t.Fatalf("client timeout cause lost: %v", err)
 				}
+				if ctx.Err() != nil {
+					t.Fatalf("client timeout canceled caller context: %v", ctx.Err())
+				}
 			}
 		})
+	}
+}
+
+func TestKlineReceiptPreservesTimeoutWithoutDeadlineSentinel(t *testing.T) {
+	readErr := &receiptTimeoutError{}
+	body := &receiptTestBody{reader: strings.NewReader("partial"), readErr: readErr}
+	client := receiptClient(t, 100, func(req *http.Request) (*http.Response, error) {
+		return receiptResponse(req, http.StatusOK, body), nil
+	})
+	receipt, err := client.GetKlineReceipt(context.Background(), klineReceiptParams())
+	if receipt == nil || receipt.Complete() || string(receipt.ResponseBody()) != "partial" || body.closes != 1 {
+		t.Fatalf("receipt=%v err=%v closes=%d", receipt, err, body.closes)
+	}
+	var timeout net.Error
+	if !errors.Is(err, readErr) || !errors.As(err, &timeout) || timeout != readErr || !timeout.Timeout() {
+		t.Fatalf("original timeout error lost: %v", err)
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("transport timeout was replaced with a context deadline: %v", err)
 	}
 }
 
@@ -398,6 +426,13 @@ func receiptResponse(req *http.Request, status int, body io.ReadCloser) *http.Re
 type receiptReadError struct{ message string }
 
 func (e *receiptReadError) Error() string { return e.message }
+
+// receiptTimeoutError models a Go 1.21 body timeout without Is or Unwrap methods.
+type receiptTimeoutError struct{}
+
+func (e *receiptTimeoutError) Error() string   { return "body read timed out" }
+func (e *receiptTimeoutError) Timeout() bool   { return true }
+func (e *receiptTimeoutError) Temporary() bool { return true }
 
 type blockingReceiptBody struct {
 	prefix   []byte
