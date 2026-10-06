@@ -4,7 +4,7 @@ This directory contains working examples demonstrating how to use the Bybit Go S
 
 ## Prerequisites
 
-1. Set up your environment variables:
+1. Set up environment variables for authenticated examples (public market-data and kline receipt examples require no API keys):
 
 ```bash
 export BYBIT_API_KEY="your_api_key"
@@ -37,6 +37,16 @@ Shows how to fetch market data for multiple symbols.
 ```bash
 go run market_data/main.go
 ```
+
+### Exact Public Kline Receipt
+
+Captures one `GET /v5/market/kline` response with a context and a 4 MiB body limit. No API credentials are needed. Captured body bytes go to stdout without re-encoding or an added newline, while a safe summary and SHA-256 digest go to stderr. Failure responses may still produce partial evidence; inspect the exit status and completeness before using the data.
+
+```bash
+go run kline_receipt/main.go
+```
+
+This command makes a real public request when run manually. The package tests use only injected transports and local HTTP servers. See the [receipt API documentation](../README.md#exact-kline-receipts) for bounds, errors, timestamps, and provider-result validation.
 
 ### Order Management Example
 

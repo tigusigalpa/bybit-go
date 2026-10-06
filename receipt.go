@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -46,7 +47,8 @@ type KlineReceipt struct {
 // Method returns the observed HTTP method.
 func (r *KlineReceipt) Method() string { return r.method }
 
-// URL returns the exact URL, including the encoded query, sent by the client.
+// URL returns the response's actual request URL, including the encoded query.
+// If the injected HTTP client follows redirects, this is the final request URL.
 func (r *KlineReceipt) URL() string { return r.url }
 
 // RequestBody returns a copy of the request body. It is empty for GET requests.
@@ -70,85 +72,156 @@ func (r *KlineReceipt) CapturedAt() time.Time { return r.capturedAt }
 // CompletedAt returns when reading and closing the original body completed, in UTC.
 func (r *KlineReceipt) CompletedAt() time.Time { return r.completedAt }
 
-// Complete reports whether the entire body was read and closed without an error.
+// Complete reports whether EOF was observed within the limit and the body was
+// closed without errors or context cancellation. It does not imply HTTP success.
 func (r *KlineReceipt) Complete() bool { return r.complete }
 
 // ResponseBodySHA256 returns the SHA-256 digest of the exact captured response bytes.
 func (r *KlineReceipt) ResponseBodySHA256() [sha256.Size]byte { return sha256.Sum256(r.responseBody) }
 
+// String returns a diagnostic summary without payloads, URLs, or header values.
+func (r KlineReceipt) String() string {
+	return fmt.Sprintf("KlineReceipt{method=%s status=%d bytes=%d complete=%t captured_at=%s completed_at=%s}",
+		r.method, r.statusCode, len(r.responseBody), r.complete,
+		r.capturedAt.Format(time.RFC3339Nano), r.completedAt.Format(time.RFC3339Nano))
+}
+
+// GoString uses the same safe summary for Go-syntax diagnostic formatting.
+func (r KlineReceipt) GoString() string { return r.String() }
+
 // GetKlineReceipt performs a public GET /v5/market/kline request and returns exact response evidence.
+// Only category, symbol, interval, start, end, and limit request fields are accepted.
 // It does not decode JSON or interpret Bybit retCode; application-level validation remains the caller's responsibility.
 func (c *Client) GetKlineReceipt(ctx context.Context, params map[string]interface{}) (*KlineReceipt, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("kline receipt context must not be nil")
 	}
-	url := c.BaseURI() + "/v5/market/kline"
-	if len(params) > 0 {
-		url += "?" + c.buildQuery(params)
+	if err := receiptContextError(ctx); err != nil {
+		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	for key := range params {
+		switch key {
+		case "category", "symbol", "interval", "start", "end", "limit":
+		default:
+			return nil, fmt.Errorf("unsupported kline request field %q", key)
+		}
+	}
+	req, err := c.newRequest(ctx, http.MethodGet, "/v5/market/kline", params, false)
 	if err != nil {
 		return nil, err
 	}
-	// Kline is a public endpoint. Do not add API credentials or signatures to this request.
-	req.Header.Set("User-Agent", "bybit-go/1.0.0")
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
+	// Suppress net/http's transparent gzip decompression so hashes describe the
+	// original response body. An injected transport must also preserve these bytes.
+	req.Header.Set("Accept-Encoding", "identity")
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
+	resp, doErr := c.httpClient.Do(req)
+	capturedAt := time.Now().UTC()
+	if resp == nil {
+		return nil, errors.Join(doErr, receiptContextError(ctx))
+	}
+	actualRequest := req
+	if resp.Request != nil {
+		actualRequest = resp.Request
 	}
 	receipt := &KlineReceipt{
-		method:      req.Method,
-		url:         req.URL.String(),
-		requestBody: []byte{},
-		statusCode:  resp.StatusCode,
-		status:      resp.Status,
-		headers:     safeResponseHeaders(resp.Header),
-		capturedAt:  time.Now().UTC(),
+		method:     actualRequest.Method,
+		url:        actualRequest.URL.String(),
+		statusCode: resp.StatusCode,
+		status:     resp.Status,
+		headers:    safeResponseHeaders(resp.Header),
+		capturedAt: capturedAt,
+	}
+	if doErr != nil {
+		// http.Client.Do returns a response with an error only when CheckRedirect
+		// fails. It has already closed that body; do not read or close it again.
+		receipt.completedAt = time.Now().UTC()
+		return receipt, errors.Join(doErr, receiptContextError(ctx), receiptHTTPError(resp, nil))
 	}
 
-	body, readErr := readReceiptBody(resp.Body, c.receiptBodyLimit)
-	closeErr := resp.Body.Close()
-	receipt.responseBody = append([]byte(nil), body...)
+	body, lifecycleErr := captureReceiptBody(ctx, resp.Body, c.receiptBodyLimit)
 	receipt.completedAt = time.Now().UTC()
-	receipt.complete = readErr == nil && closeErr == nil
+	receipt.responseBody = body
+	receipt.complete = lifecycleErr == nil
+	return receipt, errors.Join(lifecycleErr, receiptHTTPError(resp, body))
+}
 
-	var errList []error
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		errList = append(errList, &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)})
+func receiptHTTPError(resp *http.Response, body []byte) error {
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		return nil
 	}
-	if readErr != nil {
-		errList = append(errList, readErr)
+	return &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+}
+
+func receiptContextError(ctx context.Context) error {
+	if ctx.Err() == nil {
+		return nil
 	}
-	if closeErr != nil {
-		errList = append(errList, closeErr)
+	cause := context.Cause(ctx)
+	if errors.Is(cause, ctx.Err()) {
+		return cause
 	}
-	if len(errList) > 0 {
-		return receipt, errors.Join(errList...)
+	return errors.Join(ctx.Err(), cause)
+}
+
+// captureReceiptBody closes the original body once, including on cancellation.
+// Waiting for the cancellation callback ensures no close or receipt mutation
+// remains in progress when a completed receipt becomes visible to the caller.
+func captureReceiptBody(ctx context.Context, body io.ReadCloser, limit int64) ([]byte, error) {
+	var once sync.Once
+	var closeErr error
+	closeBody := func() {
+		once.Do(func() { closeErr = body.Close() })
 	}
-	return receipt, nil
+	closed := make(chan struct{})
+	stop := context.AfterFunc(ctx, func() {
+		closeBody()
+		close(closed)
+	})
+	data, readErr := readReceiptBody(body, limit)
+	if !stop() {
+		<-closed
+	}
+	closeBody()
+	return data, errors.Join(readErr, closeErr, receiptContextError(ctx))
 }
 
 func readReceiptBody(body io.Reader, limit int64) ([]byte, error) {
-	limited := io.LimitReader(body, limit+1)
+	// Read at most limit bytes, then probe one extra byte to distinguish an exact
+	// limit followed by EOF from overflow. This also avoids limit+1 int overflow.
+	limited := &io.LimitedReader{R: body, N: limit}
 	data, err := io.ReadAll(limited)
-	if int64(len(data)) > limit {
-		return data[:limit], &ReceiptBodyLimitError{Limit: limit}
+	if err != nil || limited.N > 0 {
+		return data, err
 	}
-	return data, err
+	var probe [1]byte
+	for attempts := 0; attempts < 100; attempts++ {
+		n, err := body.Read(probe[:])
+		if n > 0 {
+			if err == io.EOF {
+				err = nil
+			}
+			return data, errors.Join(&ReceiptBodyLimitError{Limit: limit}, err)
+		}
+		if err == io.EOF {
+			return data, nil
+		}
+		if err != nil {
+			return data, err
+		}
+	}
+	return data, io.ErrNoProgress
 }
 
 func safeResponseHeaders(headers http.Header) http.Header {
 	safe := make(http.Header)
 	for key, values := range headers {
-		lower := strings.ToLower(key)
-		if lower == "authorization" || lower == "cookie" || lower == "set-cookie" || strings.HasPrefix(lower, "x-bapi-") {
-			continue
+		// Allow only transport metadata and documented rate-limit / correlation
+		// identifiers; a denylist cannot cover arbitrary secret header names.
+		switch strings.ToLower(key) {
+		case "content-type", "content-length", "content-encoding", "date", "etag", "last-modified", "retry-after",
+			"x-bapi-limit", "x-bapi-limit-status", "x-bapi-limit-reset-timestamp", "x-request-id", "x-trace":
+			safe[http.CanonicalHeaderKey(key)] = append([]string(nil), values...)
 		}
-		safe[key] = append([]string(nil), values...)
 	}
 	return safe
 }

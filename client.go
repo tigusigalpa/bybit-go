@@ -2,6 +2,7 @@ package bybit
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/hmac"
 	"crypto/rsa"
@@ -270,41 +271,9 @@ func (c *Client) headers(method, path string, params map[string]interface{}) (ma
 
 // Request performs a signed Bybit REST request and decodes its JSON response.
 func (c *Client) Request(method, path string, params map[string]interface{}) (map[string]interface{}, error) {
-	method = strings.ToUpper(method)
-	fullURL := c.BaseURI() + path
-
-	var req *http.Request
-	var err error
-
-	if method == "GET" {
-		if len(params) > 0 {
-			fullURL += "?" + c.buildQuery(params)
-		}
-		req, err = http.NewRequest(method, fullURL, nil)
-	} else {
-		var body []byte
-		if len(params) > 0 {
-			body, err = json.Marshal(params)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			body = []byte("{}")
-		}
-		req, err = http.NewRequest(method, fullURL, bytes.NewBuffer(body))
-	}
-
+	req, err := c.newRequest(context.Background(), method, path, params, true)
 	if err != nil {
 		return nil, err
-	}
-
-	headers, err := c.headers(method, path, params)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, v := range headers {
-		req.Header.Set(k, v)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -330,6 +299,51 @@ func (c *Client) Request(method, path string, params map[string]interface{}) (ma
 	}
 
 	return result, nil
+}
+
+// newRequest shares URL/query and body construction between decoded requests and
+// receipts. Public receipts omit the authentication headers used by Request.
+func (c *Client) newRequest(ctx context.Context, method, path string, params map[string]interface{}, signed bool) (*http.Request, error) {
+	method = strings.ToUpper(method)
+	fullURL := c.BaseURI() + path
+
+	var req *http.Request
+	var err error
+
+	if method == "GET" {
+		if len(params) > 0 {
+			fullURL += "?" + c.buildQuery(params)
+		}
+		req, err = http.NewRequestWithContext(ctx, method, fullURL, nil)
+	} else {
+		var body []byte
+		if len(params) > 0 {
+			body, err = json.Marshal(params)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			body = []byte("{}")
+		}
+		req, err = http.NewRequestWithContext(ctx, method, fullURL, bytes.NewBuffer(body))
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if signed {
+		headers, err := c.headers(method, path, params)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+	} else {
+		req.Header.Set("User-Agent", "bybit-go/1.0.0")
+	}
+	return req, nil
 }
 
 // Endpoint returns the active REST API endpoint.

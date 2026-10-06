@@ -127,7 +127,7 @@ client, err := bybit.NewClient(bybit.ClientConfig{
 
 ## REST API
 
-Methods return the decoded Bybit response as `map[string]interface{}`. This deliberately leaves the full V5 request surface available: pass the exact fields documented by Bybit in the `params` map.
+Most REST methods return the decoded Bybit response as `map[string]interface{}`. Pass the fields documented by Bybit in the `params` map. `GetKlineReceipt` additionally exposes the HTTP response body without JSON decoding.
 
 ### Market data
 
@@ -155,10 +155,21 @@ Available market helpers include `GetServerTime`, `GetTickers`, `GetKline`, `Get
 
 ### Exact kline receipts
 
-`GetKlineReceipt` captures the exact public REST response bytes for archival, repair, or backfill workflows. It uses the configured HTTP client and endpoint, requires no API key, and does not decode or normalize the Bybit payload. In particular, it preserves kline array ordering and numeric/string lexemes exactly as sent by the server.
+`GetKlineReceipt(ctx, params)` captures the public HTTP response body for archival, repair, or backfill workflows. It uses the same request builder, endpoint settings, and injected `HTTPClient` as the decoded methods. No API key is required, and the SDK does not attach authentication headers. The only accepted request fields are `category`, `symbol`, `interval`, `start`, `end`, and `limit`, as documented for [Bybit Get Kline](https://bybit-exchange.github.io/docs/v5/market/kline).
+
+The method does not parse JSON, so whitespace, key order, unknown fields, numeric/string lexemes, and the original ordering of candle arrays are preserved. Bybit returns candles in reverse start-time order and may include an unfinished candle; filtering or normalization belongs to the caller.
 
 ```go
-receipt, err := client.GetKlineReceipt(context.Background(), map[string]interface{}{
+client, err := bybit.NewClient(bybit.ClientConfig{
+	ReceiptBodyLimit: 4 << 20, // 4 MiB; zero selects this default
+})
+if err != nil {
+	log.Fatal(err)
+}
+ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+defer cancel()
+
+receipt, captureErr := client.GetKlineReceipt(ctx, map[string]interface{}{
 	"category": "linear",
 	"symbol":   "BTCUSDT",
 	"interval": "1",
@@ -166,16 +177,42 @@ receipt, err := client.GetKlineReceipt(context.Background(), map[string]interfac
 	"end":      "1700000059999",
 	"limit":    200,
 })
-if err != nil {
-	// A non-2xx response, cancellation, read failure, close failure, or
-	// response-size limit can still return a non-nil receipt with evidence.
-	log.Fatal(err)
+if receipt != nil {
+	// Archive evidence before handling captureErr, including partial bodies.
+	raw := receipt.ResponseBody()
+	digest := receipt.ResponseBodySHA256()
+	fmt.Printf("%s hash=%x\n", receipt, digest) // summary excludes payload/header values
+	_ = raw // pass raw and receipt metadata to your application's archive
 }
-
-archive(receipt.ResponseBody(), receipt.ResponseBodySHA256(), receipt.CapturedAt())
+if captureErr != nil {
+	// errors.Is / errors.As retain context, transport, read, close, limit,
+	// and *bybit.HTTPError causes. A nil receipt means no response was observed.
+	return
+}
+// Decode raw separately and validate retCode before using any market data.
 ```
 
-The response limit is configured by `ClientConfig.ReceiptBodyLimit` and defaults to 4 MiB. A receipt is complete only when the entire body was read and closed without error. `ResponseBody`, `ResponseHeaders`, and request metadata are exposed through defensive-copy accessors; sensitive response headers are excluded. A complete HTTP receipt does **not** validate Bybit's application-level `retCode`—callers must inspect that result themselves.
+See the runnable [no-key receipt example](examples/kline_receipt/main.go), which writes captured body bytes to stdout and a safe summary to stderr.
+
+`ClientConfig.ReceiptBodyLimit` defaults to 4 MiB. The SDK retains at most that many bytes and probes at most one additional byte to detect overflow. Exactly the limit followed by EOF is accepted. On overflow, `errors.Is(err, bybit.ErrReceiptBodyLimitExceeded)` succeeds; the retained bytes and their SHA-256 describe the captured prefix, not the full response. The limit bounds body capture, not HTTP header memory or every temporary allocation.
+
+Receipt lifecycle and errors:
+
+| Result | Receipt evidence | `Complete()` |
+|---|---|---|
+| Body read to EOF and closed successfully | Exact body, including an empty body | `true` |
+| Non-2xx with a fully read body | Exact status/body plus `*HTTPError` | `true` (HTTP capture only) |
+| Read failure, overflow, close failure, or cancellation | Available bytes/status plus all error causes | `false` |
+| Transport failure without a response | `nil` receipt; original transport/context error | No receipt |
+| Injected client's redirect policy rejects a redirect | Observed status/headers; body already closed by `http.Client`, so no captured bytes | `false` |
+
+`CapturedAt()` records when the response is available from the HTTP client. `CompletedAt()` is recorded after body reading and the original body's single `Close` call have finished. Both are local UTC times, independent of candle timestamps. Cancellation closes the body to unblock reading; injected transports must obey `net/http`'s concurrent `Read`/`Close` contract. The injected client's timeout and redirect policy remain active. `URL()` records the actual response request URL, including the final query after redirects.
+
+`ResponseBody()`, `RequestBody()`, and `ResponseHeaders()` return defensive copies and are safe to access concurrently after return. The GET request body is empty. Response headers are restricted to content metadata (`Content-Type`, `Content-Length`, `Content-Encoding`, `Date`, `ETag`, `Last-Modified`), `Retry-After`, Bybit rate-limit headers (`X-Bapi-Limit`, `X-Bapi-Limit-Status`, `X-Bapi-Limit-Reset-Timestamp`), and correlation headers (`X-Request-Id`, `X-Trace`). Authentication/cookie headers and unlisted headers are excluded. Formatting the receipt with `%v`, `%+v`, or `%#v` shows a summary without URLs, payloads, or header values; the SDK does not log receipts automatically.
+
+Requests use `Accept-Encoding: identity` to prevent standard `net/http` gzip decompression from changing captured bytes. Receipts preserve response **body** bytes exposed by the transport, not HTTP framing or TLS packets. An injected transport must preserve body bytes if wire-level body fidelity is required.
+
+A complete HTTP receipt does **not** validate JSON or Bybit's application-level `retCode`. Callers must inspect the body before treating it as a successful market-data result. The SDK adds no retries, and a receipt represents one observed response rather than an attempt history. Redirects or retries performed inside an injected client/transport are not a full history exposed by this API. Existing `GetKline` and `Request` retain their decoding and cleanup behavior; the receipt body limit applies only to receipt capture.
 
 ### Account and positions
 

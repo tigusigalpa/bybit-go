@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetKlineReceiptPreservesExactPublicResponse(t *testing.T) {
-	raw := []byte(" {\n \"unknown\": 1e-999, \"result\":{\"list\":[[\"1700000000000\",\"0.00000000000000000001\",1E+9]]}, \"retCode\":0 } \n")
+	raw := []byte(" {\n \"unknown\": [1e-999,9.0000e+999,9007199254740993123456789], \"result\":{\"list\":[[\"1700000060000\",\"0.00000000000000000001\",\"2.000\",\"0.0001\",\"1.0\",\"0\",\"0.0000\"],[\"1700000000000\",\"1\",\"2\",\"0.01\",\"1.2\",\"3\",\"3.6\"]]}, \"retCode\":0 } \n")
 	client, err := NewClient(ClientConfig{APIKey: "must-not-send", APISecret: "secret", HTTPClient: &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		if req.Method != http.MethodGet || req.URL.Path != "/v5/market/kline" {
 			t.Fatalf("request = %s %s", req.Method, req.URL.Path)
