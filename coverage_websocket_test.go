@@ -38,15 +38,9 @@ func TestWebSocketSubscriptionAndListenerFlow(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		if err := conn.WriteJSON(map[string]interface{}{"op": "ping"}); err != nil {
+		if err := conn.WriteJSON(map[string]interface{}{"success": true, "ret_msg": "pong", "op": "ping"}); err != nil {
 			t.Error(err)
 			return
-		}
-		_, message, err := conn.ReadMessage()
-		if err == nil {
-			receivedMu.Lock()
-			received = append(received, string(message))
-			receivedMu.Unlock()
 		}
 	}))
 	defer server.Close()
@@ -72,7 +66,7 @@ func TestWebSocketSubscriptionAndListenerFlow(t *testing.T) {
 	if err := ws.Listen(); err != nil {
 		t.Fatal(err)
 	}
-	if len(callbacks) < 2 || callbacks[0]["topic"] != "tickers.BTCUSDT" {
+	if len(callbacks) != 3 || callbacks[0]["topic"] != "tickers.BTCUSDT" || callbacks[1]["op"] != "ping" || callbacks[1]["ret_msg"] != "pong" || callbacks[1]["success"] != true || callbacks[2]["error"] != true {
 		t.Fatalf("callbacks = %#v", callbacks)
 	}
 	if len(ws.GetSubscriptions()) != 0 {
@@ -87,8 +81,8 @@ func TestWebSocketSubscriptionAndListenerFlow(t *testing.T) {
 
 	receivedMu.Lock()
 	defer receivedMu.Unlock()
-	if len(received) != 4 {
-		t.Fatalf("received %d client messages, want 4", len(received))
+	if len(received) != 3 {
+		t.Fatalf("received %d client messages, want 3", len(received))
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -69,6 +70,120 @@ func TestSubscribeKlineTopic(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("did not receive subscription")
+	}
+}
+
+func TestWebSocketHeartbeatRepliesDoNotSendJSONPong(t *testing.T) {
+	tests := []struct {
+		name   string
+		config WebSocketConfig
+		reply  string
+		op     string
+		topic  string
+	}{
+		{
+			name:  "public spot",
+			reply: `{"success":true,"ret_msg":"pong","conn_id":"spot-test","op":"ping"}`,
+			op:    "ping",
+			topic: "tickers.BTCUSDT",
+		},
+		{
+			name:   "public linear",
+			config: WebSocketConfig{PublicCategory: WebSocketCategoryLinear},
+			reply:  `{"success":true,"ret_msg":"pong","conn_id":"linear-test","req_id":"","op":"ping"}`,
+			op:     "ping",
+			topic:  "kline.1.BTCUSDT",
+		},
+		{
+			name:   "private",
+			config: WebSocketConfig{IsPrivate: true},
+			reply:  `{"op":"pong","args":["1675418560633"],"conn_id":"private-test"}`,
+			op:     "pong",
+			topic:  "wallet",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			update := []byte(fmt.Sprintf(`{"topic":%q,"data":[]}`, tt.topic))
+			serverDone := make(chan error, 1)
+			server := newWebSocketServer(t, func(conn *websocket.Conn) {
+				defer func() { _ = conn.Close() }()
+				serverDone <- func() error {
+					messageType, message, err := conn.ReadMessage()
+					if err != nil {
+						return err
+					}
+					if messageType != websocket.TextMessage || string(message) != `{"op":"ping"}` {
+						return fmt.Errorf("client heartbeat = %q, type %d; want JSON ping", message, messageType)
+					}
+
+					// Protocol control frames must still be handled by gorilla/websocket.
+					var controlPong string
+					conn.SetPongHandler(func(payload string) error { controlPong = payload; return nil })
+					if err := conn.WriteMessage(websocket.PingMessage, []byte("control-heartbeat")); err != nil {
+						return err
+					}
+					for _, payload := range [][]byte{[]byte(tt.reply), update} {
+						if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+							return err
+						}
+					}
+
+					// The update callback sends a second ping after the reply has been
+					// processed. An erroneous JSON pong would arrive before that ping.
+					messageType, message, err = conn.ReadMessage()
+					if err != nil {
+						return err
+					}
+					if messageType != websocket.TextMessage || string(message) != `{"op":"ping"}` {
+						return fmt.Errorf("unexpected message after heartbeat reply: type=%d payload=%q", messageType, message)
+					}
+					if controlPong != "control-heartbeat" {
+						return fmt.Errorf("protocol control pong = %q", controlPong)
+					}
+					return nil
+				}()
+			})
+			defer server.Close()
+			conn, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ws := NewWebSocket(tt.config)
+			ws.conn, ws.connected = conn, true
+			defer func() { _ = ws.Close() }()
+			var rawMessages [][]byte
+			var decodedMessages []map[string]interface{}
+			ws.OnRawMessage(func(message []byte, receivedAt time.Time) {
+				rawMessages = append(rawMessages, message)
+				if receivedAt.IsZero() {
+					t.Error("raw heartbeat callback received a zero timestamp")
+				}
+			})
+			ws.OnMessage(func(message map[string]interface{}) {
+				decodedMessages = append(decodedMessages, message)
+				if message["topic"] == tt.topic {
+					if err := ws.Ping(); err != nil {
+						t.Errorf("follow-up ping: %v", err)
+					}
+				}
+			})
+			if err := ws.Ping(); err != nil {
+				t.Fatal(err)
+			}
+			if err := ws.ListenContext(context.Background()); err == nil {
+				t.Error("ListenContext returned nil after the server closed")
+			}
+			if err := <-serverDone; err != nil {
+				t.Fatal(err)
+			}
+			if len(rawMessages) != 2 || !bytes.Equal(rawMessages[0], []byte(tt.reply)) || !bytes.Equal(rawMessages[1], update) {
+				t.Fatalf("raw callbacks did not preserve heartbeat reply and update: %q", rawMessages)
+			}
+			if len(decodedMessages) != 2 || decodedMessages[0]["op"] != tt.op || decodedMessages[1]["topic"] != tt.topic {
+				t.Fatalf("decoded callbacks = %#v", decodedMessages)
+			}
+		})
 	}
 }
 
