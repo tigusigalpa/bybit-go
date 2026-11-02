@@ -405,18 +405,14 @@ func (ws *WebSocket) listen(ctx context.Context, notifyReadErrors bool) error {
 			continue
 		}
 
+		// JSON heartbeat replies (including op="ping") are acknowledgements, not
+		// requests for a JSON pong. Protocol control frames are handled by gorilla.
 		ws.mu.RLock()
 		callback := ws.messageCallback
 		ws.mu.RUnlock()
 
 		if callback != nil {
 			callback(data)
-		}
-
-		if op, ok := data["op"].(string); ok && op == "ping" {
-			if err := ws.Send(map[string]interface{}{"op": "pong"}); err != nil {
-				return err
-			}
 		}
 	}
 }
