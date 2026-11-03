@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Upgraded `github.com/gorilla/websocket` to v1.5.3 to address GO-2026-6278 (weak WebSocket masking randomness).
 - Hardened the existing `GetKlineReceipt` body lifecycle: context cancellation closes a blocked response body once, waits for cleanup, and preserves cancellation causes alongside read and close errors.
 - Preserved both size-limit and original read errors, including non-2xx response evidence, and avoided integer overflow for large configured limits.
 - Recorded the actual response request URL after redirects and retained response metadata when a redirect policy rejects a response already closed by `http.Client`.
